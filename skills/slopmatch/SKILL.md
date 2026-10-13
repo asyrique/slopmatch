@@ -1,29 +1,32 @@
 ---
 name: slopmatch
-description: Build a pseudonymous builder profile from this machine's coding-agent transcripts and installed skills, then find and reveal matches with other builders in a room. Use when the user types /slopmatch, asks to find a cofounder, teammate or builder match, or wants to see their builder profile.
+description: Build a pseudonymous builder profile (from this machine's coding-agent transcripts and skills, or in claude.ai from the conversation and a short interview), then find and reveal matches with builders worldwide. Use when the user types /slopmatch, asks to find a cofounder, teammate or builder match, or wants to see their builder profile.
 ---
 
 # slopmatch
 
 You are helping the user find people who build the way they do. You do the profiling **locally**, using your own reasoning. Only a short pseudonymous card and ten numbers ever leave this machine, and only after the user approves the exact payload.
 
-## 0. Check where you're running
+## 0. Pick a mode
 
-This needs a shell **on the user's own computer** (Claude Code, Codex CLI or app, or similar). If you are in a cloud sandbox or a chat surface without access to the user's home folder, stop and tell the user to run `/slopmatch` from a coding agent on their machine.
+- **Local mode**: you have a shell **on the user's own computer** (Claude Code, Codex CLI or app, or similar) and can see their home folder. This is the richest profile. Follow sections 1–6.
+- **Web mode**: you're in claude.ai, Claude Desktop chat, or a cloud sandbox with no access to the user's home folder or agent transcripts. Follow **Web mode** below instead of sections 1–6. Don't try to install the CLI there.
 
-## 1. Find or install the CLI
+Everyone joins one **global pool** (room `world`) by default. Only use a different room if the user says they're at an event with its own room name (`^[a-z0-9][a-z0-9-]{2,31}$`).
+
+## 1. Find or install the CLI (local mode)
 
 The CLI is a single binary, `slopmatch`:
 
 - macOS / Linux: `~/.slopmatch/bin/slopmatch`
 - Windows: `%USERPROFILE%\.slopmatch\bin\slopmatch.exe` (PowerShell: `& "$env:USERPROFILE\.slopmatch\bin\slopmatch.exe"`)
 
-Run `<slopmatch> --version`. If it isn't there, ask the user which room they're joining (the organiser shares it, e.g. `sg-build-day`). **Ask before running an installer**, then:
+Run `<slopmatch> --version`. If it isn't there, **ask before running an installer**, then:
 
-- macOS / Linux: `curl -fsSL "https://slopmatch.lol/install.sh?room=<room>" | sh`
-- Windows (PowerShell): `irm "https://slopmatch.lol/install.ps1?room=<room>" | iex`
+- macOS / Linux: `curl -fsSL https://slopmatch.lol/install.sh | sh`
+- Windows (PowerShell): `irm https://slopmatch.lol/install.ps1 | iex`
 
-The installer downloads one binary into `~/.slopmatch/bin` and saves the room in `~/.slopmatch/config.json`. The server is `https://slopmatch.lol` unless the organiser gives a different one (then add `--url <server>` to `slopmatch config`). If the CLI is installed but no room is set, run `slopmatch config --room <room>`. Below, `slopmatch` means the full path above.
+(For an event room, add `?room=<room>` to the installer URL, or run `slopmatch config --room <room>` later.) The installer downloads one binary into `~/.slopmatch/bin` and installs this skill. The server is `https://slopmatch.lol`. Below, `slopmatch` means the full path above.
 
 ## Privacy rules (non-negotiable)
 
@@ -91,6 +94,40 @@ slopmatch reveal <their-handle> --contact "telegram @name / email / 'find me at 
 
 The contact is only shown to the other person if they also reveal the user. `slopmatch status` shows mutual reveals and contacts. Never reveal on the user's behalf without them asking.
 
+## Web mode (claude.ai and other chat surfaces)
+
+There are no transcripts to read here, so you profile from what you can actually observe, and the user publishes from their browser. You never need network access to slopmatch.lol.
+
+1. **Gather.** Use what you know about how the user builds from this conversation, and from memory or past chats if those tools are available and the user is fine with it. Then ask a short interview in **one** message (skip anything you already know):
+   - When you start something new with an AI agent, do you write a plan or spec first, or dive straight in?
+   - How big are the tasks you hand over: one function, a feature, or "build the whole app"?
+   - How do you check the output: run tests, click around, read the diff, or trust and ship?
+   - When it goes wrong, do you interrupt and steer, or let it try again?
+   - What do you build, and with what stack (coarse terms only)?
+   - When do you usually build: daytime, evenings, or 2am?
+2. **Estimate the 10 dimensions** (0–1; 0.5 when you genuinely can't tell). These mirror what the CLI measures from transcripts:
+   - `planning`: writes plans/specs before code (1) vs dives straight in (0)
+   - `delegation_size`: hands over big multi-step tasks (1) vs small single steps (0)
+   - `verification`: runs tests and checks output (1) vs ships unchecked (0)
+   - `steering`: often interrupts and corrects the agent (1) vs lets it run (0)
+   - `exploration`: reads and researches before changing things (1) vs edits immediately (0)
+   - `verbosity`: long, detailed prompts (1) vs terse ones (0)
+   - `curiosity`: asks why/how questions (1) vs only gives orders (0)
+   - `warmth`: please/thanks, friendly tone (1) vs purely transactional (0)
+   - `frustration`: swears or vents at the agent (1) vs calm (0)
+   - `night_owl`: share of building done late at night (0–1)
+3. **Show the local profile** (builder style, Big 5 fun guess, topics), the same as section 3. Then write the card with the same rules. Say plainly that it's based on a short interview, so it's rougher than a transcript-based profile. Omit `file_types` unless the user named languages; use extensions like `.ts`.
+4. **Hand over a publish link.** Build `{"room": "world", "dims": {...}, "card": {...}}`. If you have a code tool, base64url-encode the UTF-8 JSON (no padding) and give the user a link:
+
+   ```python
+   import json, base64
+   payload = {"room": "world", "dims": dims, "card": card}
+   print("https://slopmatch.lol/join#p=" + base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("="))
+   ```
+
+   Without a code tool, give them the JSON in a code block and tell them to paste it at https://slopmatch.lol/join. The data after `#` is never sent to any server. The page shows the exact payload, and nothing is published until the user clicks **Publish**.
+5. **Matches and reveals happen on that page.** It shows their handle, top matches (with which dimensions click and clash), reveal buttons and mutual contacts, and remembers them in that browser. If the user pastes matches back to you, write **why you'd click** and **where you'd clash** for each, as in section 5.
+
 ## Forget me
 
-`slopmatch delete --yes` removes the profile and reveals from the server. Deleting `~/.slopmatch` removes everything local.
+`slopmatch delete --yes` (local mode) or the **Delete my profile** button on https://slopmatch.lol/join (web mode) removes the profile and reveals from the server. Deleting `~/.slopmatch` removes everything local.

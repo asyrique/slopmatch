@@ -4,8 +4,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-09-01",
   "observability": { "enabled": true },
-  // bundle skills/slopmatch/SKILL.md as a string, served at /skill/SKILL.md
-  "rules": [{ "type": "Text", "globs": ["**/*.md"], "fallthrough": true }],
+  // bundle .md/.html as strings: the skill (/skill/SKILL.md), agent instructions (/, /llms.txt) and the landing page
+  "rules": [{ "type": "Text", "globs": ["**/*.md", "**/*.html"], "fallthrough": true }],
   "d1_databases": [
     {
       "binding": "DB",

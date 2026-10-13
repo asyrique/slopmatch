@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>slopmatch · join</title>
+<link rel="alternate" type="text/markdown" href="/index.md" title="Install instructions for AI agents">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='30%25'%3E%3Cstop offset='0' stop-color='%23fff6c9'/%3E%3Cstop offset='.45' stop-color='%23ff7a59'/%3E%3Cstop offset='1' stop-color='%23ff3d8b'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M14 34c-6-14 6-26 18-24 9 1 12 8 18 9 9 2 10 16 2 22-7 6-12 3-20 7-9 5-14-4-18-14z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0a0a0f; --card:rgba(20,20,30,.72); --ink:#f4f1ea; --muted:#9a98a6; --dim:#5d5b69; --line:rgba(255,255,255,.09);
+    --accent:#ff7a59; --pink:#ff4f9a; --lime:#c8ff4d; --cyan:#57e3ff;
+    --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace; }
+  * { box-sizing:border-box }
+  html { overflow-x:clip }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font:16px/1.55 var(--display); -webkit-font-smoothing:antialiased }
+  body::before { content:""; position:fixed; inset:0; z-index:0; pointer-events:none; background:
+    radial-gradient(40vmax 40vmax at 90% 0%, rgba(255,122,89,.22), transparent 60%),
+    radial-gradient(35vmax 35vmax at 0% 100%, rgba(87,227,255,.12), transparent 60%),
+    radial-gradient(30vmax 30vmax at 100% 100%, rgba(255,79,154,.14), transparent 60%) }
+  .wrap { position:relative; z-index:1; max-width:860px; margin:0 auto; padding:20px 16px 80px }
+  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:40px }
+  .logo { font-weight:800; font-size:22px; letter-spacing:-.03em; text-decoration:none; color:inherit; display:flex; align-items:center; gap:10px }
+  .logo i { width:22px; height:22px; border-radius:47% 53% 42% 58%/55% 45% 55% 45%; background:radial-gradient(circle at 35% 30%,#fff6c9,var(--accent) 45%,var(--pink)); display:inline-block }
+  .logo b { color:var(--accent) }
+  nav a.r { color:var(--muted); font-size:14px; text-decoration:none } nav a.r:hover { color:var(--ink) }
+  h1 { font-size:clamp(36px,7vw,64px); line-height:.95; letter-spacing:-.045em; margin:0 0 14px }
+  h1 span { background:linear-gradient(100deg,var(--accent),var(--pink) 55%,var(--lime)); -webkit-background-clip:text; background-clip:text; color:transparent }
+  h2 { font-size:24px; letter-spacing:-.02em; margin:0 0 12px }
+  p.lede { color:#c8c5d0; font-size:18px; margin:0 0 28px; max-width:60ch }
+  .card { background:var(--card); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--line); border-radius:20px; padding:22px; margin-bottom:18px }
+  .k { font:600 12px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:8px }
+  pre { margin:0; font:13px/1.6 var(--mono); color:#d9f5dc; background:#07070b; border:1px solid rgba(255,255,255,.05); border-radius:12px; padding:16px; overflow:auto; max-height:420px }
+  textarea { width:100%; min-height:200px; background:#07070b; color:var(--ink); border:1px solid var(--line); border-radius:12px; padding:14px; font:13px/1.5 var(--mono); resize:vertical; outline:none }
+  textarea:focus, input:focus { border-color:var(--accent) }
+  input[type=text] { width:100%; background:#07070b; color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:11px 12px; font:14px var(--mono); outline:none }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px }
+  button { appearance:none; cursor:pointer; border:0; font:700 14px var(--mono); padding:12px 18px; border-radius:12px; transition:transform .15s, opacity .2s }
+  button:active { transform:scale(.97) } button:disabled { opacity:.5; cursor:default }
+  .go { background:linear-gradient(120deg,var(--accent),var(--pink)); color:#1a0b06; box-shadow:0 12px 34px -12px rgba(255,79,154,.6) }
+  .ghost { background:rgba(255,255,255,.05); color:var(--ink); border:1px solid var(--line) }
+  .danger { background:transparent; color:var(--pink); border:1px solid rgba(255,79,154,.4) }
+  .note { font:13px/1.5 var(--mono); color:var(--muted) }
+  .err { color:var(--pink); font:13px var(--mono); margin-top:12px; white-space:pre-wrap }
+  .ok { color:var(--lime) }
+  .handle { font:800 clamp(30px,6vw,46px)/1 var(--display); letter-spacing:-.04em; color:var(--lime); margin:4px 0 6px }
+  .match { display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:start }
+  .score { font:800 40px/1 var(--display); letter-spacing:-.04em; color:var(--lime); min-width:64px }
+  .score small { display:block; font:11px var(--mono); color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-top:4px }
+  .mh { font-weight:800; font-size:22px; letter-spacing:-.02em }
+  .lf { font:600 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--accent) }
+  .hl { color:#d6d3de; margin:2px 0 6px } .st { color:var(--muted); font-size:15px; margin-bottom:10px }
+  .tag { display:inline-block; font:12px var(--mono); border:1px solid var(--line); border-radius:99px; padding:2px 9px; margin:0 5px 5px 0; color:var(--muted) }
+  .tag.c { border-color:rgba(200,255,77,.35); color:var(--lime) } .tag.x { border-color:rgba(255,79,154,.35); color:var(--pink) }
+  .rv { margin-top:12px; display:none } .rv.open { display:block }
+  .mut { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 0; border-top:1px solid var(--line) }
+  .mut:first-child { border-top:0 }
+  .mut b { color:var(--lime) }
+  .steps { display:grid; gap:10px; margin:0; padding-left:20px; color:#c8c5d0 }
+  .steps code, .note code { font:13px var(--mono); background:rgba(255,255,255,.07); padding:1px 6px; border-radius:5px; color:var(--ink) }
+  .seg { display:inline-flex; background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:12px; padding:3px }
+  .seg button { padding:8px 12px; font-size:13px; background:transparent; color:var(--muted); border-radius:9px }
+  .seg button[aria-pressed=true] { background:var(--ink); color:var(--bg) }
+  [hidden] { display:none !important }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav><a class="logo" href="/"><i></i><span>slop<b>match</b></span></a><a class="r" id="roomlink" href="/r/world">who's in ↗</a></nav>
+
+  <!-- 1. no payload yet: paste -->
+  <section id="vPaste" hidden>
+    <h1>Join from <span>anywhere</span>.</h1>
+    <p class="lede">Your agent (Claude in claude.ai, Claude Code, anything) wrote your card. Paste the JSON it gave you, check it, and publish.</p>
+    <div class="card">
+      <div class="k">Your card JSON</div>
+      <textarea id="paste" spellcheck="false" placeholder='{ "dims": { "planning": 0.6, ... }, "card": { "headline": "...", ... } }'></textarea>
+      <div class="row"><button class="go" id="usePaste">Review →</button><span class="note">Nothing is sent until you press Publish on the next step.</span></div>
+      <div class="err" id="pasteErr"></div>
+    </div>
+    <div class="card">
+      <div class="k">Don't have a card yet?</div>
+      <ol class="steps">
+        <li><b>claude.ai:</b> download <a href="/skill/slopmatch.zip" style="color:var(--cyan)">slopmatch.zip</a>, add it under Settings → Capabilities → Skills, then say <code>/slopmatch</code> in a new chat.</li>
+        <li><b>Claude Code / Codex:</b> <code>curl -fsSL https://slopmatch.lol/install.sh | sh</code>, then <code>/slopmatch</code>.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 2. review & approve -->
+  <section id="vReview" hidden>
+    <h1>This is <span>everything</span> we'd get.</h1>
+    <p class="lede">Read it. Ten numbers and a short card, nothing else. Publishing gives you a random pseudonym, and you can delete it any time.</p>
+    <div class="card">
+      <div class="k">Exact payload · room <span id="rvRoom"></span></div>
+      <pre id="payload"></pre>
+      <div class="row"><button class="go" id="publish">Publish to slopmatch</button><button class="ghost" id="cancel">Cancel</button></div>
+      <div class="err" id="pubErr"></div>
+    </div>
+  </section>
+
+  <!-- 3. dashboard -->
+  <section id="vDash" hidden>
+    <div class="card">
+      <div class="k">You are</div>
+      <div class="handle" id="me">…</div>
+      <div class="note">in <b id="dRoom"></b> · your key lives only in this browser. Same browser, same identity.</div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin:0 0 16px;justify-content:space-between">
+        <h2 style="margin:0">Your matches</h2>
+        <div class="seg" id="modeSeg"><button data-m="" aria-pressed="true">my mode</button><button data-m="similar" aria-pressed="false">similar</button><button data-m="complement" aria-pressed="false">complement</button></div>
+      </div>
+      <div id="matches"><div class="note">loading…</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Mutual reveals</h2>
+      <div id="mutual" class="note">loading…</div>
+    </div>
+
+    <div class="card">
+      <h2>Forget me</h2>
+      <p class="note" style="margin:0 0 12px">Deletes your profile and reveals from the server and forgets the key in this browser.</p>
+      <button class="danger" id="del">Delete my profile</button>
+      <span id="delConfirm" hidden><span class="note">Sure? </span><button class="danger" id="delYes">Yes, delete</button> <button class="ghost" id="delNo">Keep it</button></span>
+      <div class="err" id="delErr"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const ROOM_RE = /^[a-z0-9][a-z0-9-]{2,31}$/;
+const DIMS = ["planning", "delegation_size", "verification", "steering", "exploration", "verbosity", "curiosity", "warmth", "frustration", "night_owl"];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+const tokenKey = (room) => "slopmatch:token:" + room;
+const show = (v) => ["vPaste", "vReview", "vDash"].forEach((id) => ($(id).hidden = id !== v));
+
+let room = "world";
+{ const last = store.get("slopmatch:room"); if (last && ROOM_RE.test(last)) room = last; }
+try { const q = (new URLSearchParams(location.search).get("room") || "").toLowerCase(); if (ROOM_RE.test(q)) room = q; } catch {}
+
+/* ---- payload parsing: #p=<base64url JSON> or #j=<percent-encoded JSON>, or pasted JSON ---- */
+function b64urlDecode(s) {
+  s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "=";
+  const bin = atob(s); const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+const n01 = (v) => { const n = Number(v); return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5; };
+const clip = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
+function normalize(raw) {
+  const o = typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (!o || typeof o !== "object") throw new Error("not a JSON object");
+  const d = o.dims || o.dimensions; const c = o.card;
+  if (!d || !c) throw new Error('needs both "dims" and "card"');
+  const missing = DIMS.filter((k) => !(k in d)); if (missing.length) throw new Error("dims missing: " + missing.join(", "));
+  if (!c.headline) throw new Error("card.headline is required");
+  const r = typeof o.room === "string" ? o.room.toLowerCase() : "";
+  return {
+    room: ROOM_RE.test(r) ? r : room,
+    dims: Object.fromEntries(DIMS.map((k) => [k, Math.round(n01(d[k]) * 1000) / 1000])),
+    card: {
+      headline: clip(c.headline, 90),
+      style: clip(c.style, 400),
+      big5: Object.fromEntries("OCEAN".split("").map((k) => [k, Math.round(n01((c.big5 || {})[k]) * 100) / 100])),
+      topics: (Array.isArray(c.topics) ? c.topics : []).map((t) => clip(t, 30).toLowerCase()).filter(Boolean).slice(0, 8),
+      file_types: (Array.isArray(c.file_types) ? c.file_types : []).map((t) => clip(t, 12).toLowerCase()).filter((t) => /^\.[a-z0-9]+$/.test(t)).slice(0, 6),
+      looking_for: clip(c.looking_for || "just curious", 40),
+      mode: c.mode === "complement" ? "complement" : "similar",
+    },
+  };
+}
+
+async function api(method, path, body, token) {
+  const r = await fetch(path, { method, headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || "HTTP " + r.status);
+  return d;
+}
+
+/* ---- review ---- */
+let pending = null;
+function review(p) {
+  pending = p; room = p.room;
+  $("rvRoom").textContent = p.room;
+  $("payload").textContent = JSON.stringify(p, null, 2);
+  $("pubErr").textContent = "";
+  show("vReview"); scrollTo(0, 0);
+}
+$("usePaste").onclick = () => {
+  $("pasteErr").textContent = "";
+  let text = $("paste").value.trim();
+  const m = text.match(/\{[\s\S]*\}/); if (m) text = m[0]; // tolerate prose or code fences around the JSON
+  try { review(normalize(text)); } catch (e) { $("pasteErr").textContent = "Couldn't read that: " + e.message; }
+};
+$("cancel").onclick = () => { pending = null; start(); };
+$("publish").onclick = async () => {
+  const btn = $("publish"); btn.disabled = true; $("pubErr").textContent = "";
+  try {
+    const existing = store.get(tokenKey(pending.room));
+    const res = await api("POST", "/api/profiles", pending, existing);
+    if (res.token) store.set(tokenKey(pending.room), res.token);
+    store.set("slopmatch:handle:" + pending.room, res.handle);
+    room = pending.room; pending = null; store.set("slopmatch:room", room);
+    dashboard();
+  } catch (e) { $("pubErr").textContent = "Publish failed: " + e.message; }
+  btn.disabled = false;
+};
+
+/* ---- dashboard ---- */
+let mode = "";
+function dimLabel(x) { return `${x.dim.replace(/_/g, " ")} ${Math.round(x.mine * 100)}/${Math.round(x.theirs * 100)}`; }
+async function loadMatches() {
+  const token = store.get(tokenKey(room));
+  const box = $("matches");
+  try {
+    const [d, rv] = await Promise.all([
+      api("GET", `/api/matches?limit=5${mode ? "&mode=" + mode : ""}`, null, token),
+      api("GET", "/api/reveals", null, token).catch(() => ({ mutual: [] })),
+    ]);
+    const mutual = new Set(rv.mutual.map((m) => m.handle));
+    $("me").textContent = d.you;
+    if (!d.matches.length) { box.innerHTML = `<div class="note">You're the first one in ${esc(d.room)}. Check back soon, or share slopmatch.lol with a builder friend.</div>`; return; }
+    box.innerHTML = d.matches.map((m, i) => `
+      <div class="match" style="${i ? "border-top:1px solid var(--line);padding-top:16px;margin-top:16px" : ""}">
+        <div class="score">${m.score}<small>match</small></div>
+        <div>
+          <div class="lf">${esc(m.card.looking_for)} · ${esc(m.card.mode)}</div>
+          <div class="mh">${esc(m.handle)}</div>
+          <div class="hl">${esc(m.card.headline)}</div>
+          <div class="st">${esc(m.card.style)}</div>
+          <div>${m.drivers.clicks_on.map((x) => `<span class="tag c">✓ ${esc(dimLabel(x))}</span>`).join("")}${m.drivers.clashes_on.map((x) => `<span class="tag x">✕ ${esc(dimLabel(x))}</span>`).join("")}</div>
+          <div>${m.card.topics.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
+          <div class="row" style="margin-top:10px">${mutual.has(m.handle) ? `<span class="note ok">♥ mutual: contact below</span>` : m.you_revealed ? `<span class="note ok">you revealed: waiting on them</span>` : `<button class="ghost" data-open="${esc(m.handle)}">Reveal myself →</button>`}</div>
+          <div class="rv" data-rv="${esc(m.handle)}">
+            <input type="text" maxlength="120" placeholder="how they can reach you: telegram @you, email, 'find me at the snack table'">
+            <div class="row"><button class="go" data-send="${esc(m.handle)}">Reveal to ${esc(m.handle)}</button><span class="note">They only see this if they reveal you too.</span></div>
+            <div class="err"></div>
+          </div>
+        </div>
+      </div>`).join("");
+  } catch (e) {
+    if (/unknown or missing token/.test(e.message)) { store.del(tokenKey(room)); start(); return; }
+    box.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+}
+$("matches").addEventListener("click", async (e) => {
+  const open = e.target.closest("[data-open]"); const send = e.target.closest("[data-send]");
+  if (open) { const rv = document.querySelector(`[data-rv="${CSS.escape(open.dataset.open)}"]`); rv.classList.add("open"); rv.querySelector("input").focus(); open.remove(); }
+  if (send) {
+    const h = send.dataset.send, rv = document.querySelector(`[data-rv="${CSS.escape(h)}"]`), contact = rv.querySelector("input").value.trim();
+    if (!contact) { rv.querySelector(".err").textContent = "Add a way to reach you first."; return; }
+    send.disabled = true;
+    try {
+      const r = await api("POST", "/api/reveals", { handle: h, contact }, store.get(tokenKey(room)));
+      rv.innerHTML = r.mutual ? `<div class="note ok">♥ mutual! reach them at: <b>${esc(r.their_contact)}</b></div>` : `<div class="note ok">${esc(r.note)}</div>`;
+      loadMutual();
+    } catch (err) { rv.querySelector(".err").textContent = err.message; send.disabled = false; }
+  }
+});
+async function loadMutual() {
+  try {
+    const d = await api("GET", "/api/reveals", null, store.get(tokenKey(room)));
+    $("mutual").innerHTML = (d.mutual.length
+      ? d.mutual.map((m) => `<div class="mut"><span>♥ <b>${esc(m.handle)}</b></span><span>${esc(m.their_contact)}</span></div>`).join("")
+      : `<div>No mutual reveals yet.</div>`) + (d.waiting_on_them > 0 ? `<div style="margin-top:8px">${d.waiting_on_them} reveal${d.waiting_on_them === 1 ? "" : "s"} waiting on the other person.</div>` : "");
+  } catch (e) { $("mutual").innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
+$("modeSeg").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  mode = b.dataset.m; $("modeSeg").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  loadMatches();
+});
+$("del").onclick = () => { $("del").hidden = true; $("delConfirm").hidden = false; };
+$("delNo").onclick = () => { $("del").hidden = false; $("delConfirm").hidden = true; };
+$("delYes").onclick = async () => {
+  try { await api("DELETE", "/api/profiles", null, store.get(tokenKey(room))); store.del(tokenKey(room)); store.del("slopmatch:handle:" + room); store.del("slopmatch:room"); room = "world"; start(); }
+  catch (e) { $("delErr").textContent = e.message; }
+};
+function dashboard() {
+  $("dRoom").textContent = room; $("roomlink").href = "/r/" + room;
+  $("me").textContent = store.get("slopmatch:handle:" + room) || "…";
+  show("vDash"); loadMatches(); loadMutual();
+}
+
+/* ---- boot ---- */
+function start() {
+  $("roomlink").href = "/r/" + room;
+  if (store.get(tokenKey(room))) dashboard(); else show("vPaste");
+}
+(function boot() {
+  const h = location.hash.slice(1);
+  if (h) {
+    // keep the card out of history and bookmarks once it's been read
+    history.replaceState(null, "", location.pathname + location.search);
+    const params = new URLSearchParams(h);
+    try {
+      const raw = params.get("p") ? b64urlDecode(params.get("p")) : params.get("j");
+      if (raw) { review(normalize(raw)); return; }
+    } catch (e) {
+      show("vPaste"); $("pasteErr").textContent = "That link's card couldn't be read (" + e.message + "). Paste the JSON instead."; return;
+    }
+  }
+  start();
+})();
+</script>
+</body>
+</html>

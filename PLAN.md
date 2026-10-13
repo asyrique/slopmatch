@@ -60,6 +60,12 @@ fixtures/make_fixtures.py   Generates fake transcripts (incl. planted secrets) i
 - [ ] Dimension scales are hand-tuned guesses that have never seen real transcripts.
 - [ ] Only Claude Code transcripts are parsed. Codex and pi aren't.
 
+### Changed 2026-10-13 afternoon
+- [x] **Global pool:** default room is `world` (CLI, installers, skill). Event rooms are opt-in via `?room=`. `/api/room/:room` returns the newest 200 people + `total`.
+- [x] **claude.ai support:** skill has a Web mode (interview → card → `slopmatch.lol/join#p=<base64url>` link). `/join` shows the exact payload, publishes on click, then shows matches/reveals/delete. Key stays in localStorage. Skill zip at `/skill/slopmatch.zip`.
+- [x] **Landing page** at `/` for browsers (WebGL raymarched metaballs, no deps). Agents/curl get markdown (`worker/src/agents.md`, also `/llms.txt`, `/index.md`).
+- [ ] claude.ai Web mode never run inside claude.ai itself; only the /join page was tested with a hand-built link.
+
 ## Next steps, in priority order
 
 ### P0: before the 17:00 demo

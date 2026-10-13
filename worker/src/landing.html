@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>slopmatch — match with builders who make slop like you</title>
+<meta name="description" content="Claude profiles how you build, in Claude Code or claude.ai. Only a pseudonymous card and ten numbers are shared, after you approve them. Get matched with builders worldwide. Contacts swap only on a mutual, double-blind reveal.">
+<meta property="og:title" content="slopmatch">
+<meta property="og:description" content="Match with builders who make slop like you.">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="alternate" type="text/markdown" href="/index.md" title="Install instructions for AI agents">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='30%25'%3E%3Cstop offset='0' stop-color='%23fff6c9'/%3E%3Cstop offset='.45' stop-color='%23ff7a59'/%3E%3Cstop offset='1' stop-color='%23ff3d8b'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M14 34c-6-14 6-26 18-24 9 1 12 8 18 9 9 2 10 16 2 22-7 6-12 3-20 7-9 5-14-4-18-14z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f; --bg2: #12121a; --ink: #f4f1ea; --muted: #9a98a6; --dim: #5d5b69; --line: rgba(255,255,255,.09);
+    --accent: #ff7a59; --pink: #ff4f9a; --lime: #c8ff4d; --cyan: #57e3ff;
+    --glass: rgba(18,18,28,.55);
+    --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box }
+  html { scroll-behavior: smooth; overflow-x: clip }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 var(--display); overflow-x: hidden; -webkit-font-smoothing: antialiased }
+  a { color: inherit }
+  ::selection { background: var(--accent); color: #1a0b06 }
+
+  /* -------- background scene -------- */
+  #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; display: block; filter: blur(.6px); transition: opacity .3s linear }
+  .fallback { position: fixed; inset: 0; z-index: 0; background:
+    radial-gradient(40vmax 40vmax at 72% 35%, rgba(255,122,89,.45), transparent 60%),
+    radial-gradient(30vmax 30vmax at 85% 70%, rgba(255,79,154,.35), transparent 60%),
+    radial-gradient(30vmax 30vmax at 60% 80%, rgba(87,227,255,.25), transparent 60%); filter: blur(20px) }
+  .grain { position: fixed; inset: -50%; z-index: 1; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain 1.2s steps(6) infinite }
+  @keyframes grain { 0%{transform:translate(0,0)} 20%{transform:translate(-3%,2%)} 40%{transform:translate(2%,-4%)} 60%{transform:translate(-4%,-1%)} 80%{transform:translate(3%,3%)} }
+  main, nav, footer { position: relative; z-index: 2 }
+
+  /* -------- nav -------- */
+  nav { max-width: 1200px; margin: 0 auto; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px }
+  .logo { font-weight: 800; font-size: 22px; letter-spacing: -.03em; text-decoration: none; display: flex; align-items: center; gap: 10px }
+  .logo i { width: 22px; height: 22px; border-radius: 47% 53% 42% 58% / 55% 45% 55% 45%; background: radial-gradient(circle at 35% 30%, #fff6c9, var(--accent) 45%, var(--pink)); animation: morph 6s ease-in-out infinite; display: inline-block }
+  @keyframes morph { 50% { border-radius: 58% 42% 55% 45% / 45% 58% 42% 55%; transform: rotate(40deg) } }
+  .logo b { color: var(--accent); font-weight: 800 }
+  .navlinks { display: flex; gap: 22px; font-size: 15px; color: var(--muted) }
+  .navlinks a { text-decoration: none; transition: color .2s } .navlinks a:hover { color: var(--ink) }
+  @media (max-width: 640px) { .navlinks a:not(.keep) { display: none } }
+
+  /* -------- hero -------- */
+  .hero > * { min-width: 0 }
+  .hero { max-width: 1200px; margin: 0 auto; padding: 8vh 24px 12vh; min-height: calc(100vh - 80px); display: flex; flex-direction: column; justify-content: center }
+  .eyebrow { font: 600 13px/1.4 var(--mono); flex-wrap: wrap; letter-spacing: .14em; text-transform: uppercase; color: var(--lime); display: inline-flex; align-items: center; gap: 10px; margin-bottom: 22px }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 0 rgba(200,255,77,.6); animation: ping 1.8s infinite }
+  @keyframes ping { 70% { box-shadow: 0 0 0 10px rgba(200,255,77,0) } 100% { box-shadow: 0 0 0 0 rgba(200,255,77,0) } }
+  h1 { text-shadow: 0 4px 40px rgba(10,10,15,.5); font-size: clamp(54px, 10.5vw, 148px); line-height: .88; letter-spacing: -.055em; font-weight: 800; margin: 0 0 26px; max-width: 9.5ch }
+  h1 .slop { background: linear-gradient(100deg, var(--accent), var(--pink) 45%, var(--lime) 90%); -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 200% 100%; animation: sheen 8s ease-in-out infinite }
+  @keyframes sheen { 50% { background-position: 100% 0 } }
+  .sub { text-shadow: 0 2px 18px rgba(10,10,15,.9); font-size: clamp(18px, 2.1vw, 23px); color: #cfccd8; max-width: 33ch; margin: 0 0 38px; text-wrap: pretty }
+  .sub em { font-style: normal; color: var(--ink); border-bottom: 2px solid var(--accent) }
+
+  .installer { max-width: 620px; background: var(--glass); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); border: 1px solid var(--line); border-radius: 18px; padding: 8px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8) }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 4px 8px }
+  .tab { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 13px var(--mono); padding: 7px 12px; border-radius: 9px; cursor: pointer; transition: .2s }
+  .tab[aria-selected="true"] { background: rgba(255,255,255,.08); color: var(--ink) }
+  .room-pill { margin-left: auto; display: flex; align-items: center; gap: 6px; font: 13px var(--mono); color: var(--muted) }
+  .room-pill input { width: 140px; background: rgba(0,0,0,.35); border: 1px solid var(--line); color: var(--lime); font: 600 13px var(--mono); border-radius: 8px; padding: 6px 8px; outline: none }
+  .room-pill input:focus { border-color: var(--lime) }
+  .room-pill input.bad { border-color: var(--pink); color: var(--pink) }
+  .cmd { display: flex; align-items: center; gap: 10px; background: #07070b; border-radius: 12px; padding: 16px 14px 16px 18px; font: 14.5px/1.5 var(--mono); border: 1px solid rgba(255,255,255,.05) }
+  .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; scrollbar-width: none; color: #e9e6f2 }
+  .cmd code::-webkit-scrollbar { display: none }
+  .cmd .p { color: var(--accent); user-select: none }
+  .copy { appearance: none; border: 0; cursor: pointer; flex: none; background: var(--accent); color: #1a0b06; font: 700 13px var(--mono); padding: 9px 14px; border-radius: 9px; transition: transform .15s, background .2s }
+  .copy:hover { transform: translateY(-1px) } .copy:active { transform: scale(.96) } .copy.ok { background: var(--lime) }
+  .then { font: 13px var(--mono); color: var(--muted); padding: 12px 10px 6px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center }
+  .then kbd { font: 600 13px var(--mono); color: var(--ink); background: rgba(255,255,255,.08); border: 1px solid var(--line); border-bottom-width: 2px; padding: 2px 7px; border-radius: 6px }
+  .then a { color: var(--cyan); text-decoration: none } .then a:hover { text-decoration: underline }
+
+  .scroll-hint { margin-top: 56px; font: 12px var(--mono); color: var(--dim); letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 10px }
+  .scroll-hint::before { content: ""; width: 1px; height: 36px; background: linear-gradient(var(--dim), transparent); animation: drip 2s ease-in-out infinite; transform-origin: top }
+  @keyframes drip { 0% { transform: scaleY(0) } 50% { transform: scaleY(1) } 100% { transform: scaleY(1); opacity: 0 } }
+
+  /* -------- sections -------- */
+  section { max-width: 1200px; margin: 0 auto; padding: 14vh 24px }
+  .kicker { font: 600 13px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px }
+  h2 { font-size: clamp(38px, 6vw, 76px); line-height: .95; letter-spacing: -.045em; font-weight: 800; margin: 0 0 22px; max-width: 14ch; text-wrap: balance }
+  .lede { color: #c4c1cd; font-size: clamp(17px, 1.6vw, 20px); max-width: 52ch; margin: 0 0 56px }
+  .reveal { opacity: 0; transform: translateY(40px) rotateX(-8deg); transform-origin: top; transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1) }
+  .reveal.in { opacity: 1; transform: none }
+
+  /* steps: 3D tilt cards */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; perspective: 1200px }
+  @media (max-width: 980px) { .steps { grid-template-columns: repeat(2, 1fr) } }
+  @media (max-width: 560px) { .steps { grid-template-columns: 1fr } }
+  .step { position: relative; background: linear-gradient(160deg, rgba(30,30,44,.75), rgba(14,14,22,.75)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 20px; padding: 26px 22px 24px; min-height: 270px; transform-style: preserve-3d; transition: transform .25s ease-out, border-color .3s; will-change: transform }
+  .step:hover { border-color: rgba(255,122,89,.4) }
+  .step::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(400px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.09), transparent 40%); opacity: 0; transition: opacity .3s }
+  .step:hover::after { opacity: 1 }
+  .step .n { font: 800 64px/1 var(--display); letter-spacing: -.05em; background: linear-gradient(180deg, var(--c, var(--accent)), transparent 110%); -webkit-background-clip: text; background-clip: text; color: transparent; transform: translateZ(50px); display: block; margin-bottom: 18px }
+  .step h3 { margin: 0 0 8px; font-size: 22px; letter-spacing: -.02em; transform: translateZ(30px) }
+  .step p { margin: 0; color: var(--muted); font-size: 15.5px; transform: translateZ(20px) }
+  .step code { font: 13px var(--mono); color: var(--ink); background: rgba(255,255,255,.07); padding: 1px 6px; border-radius: 5px }
+
+  /* privacy flip card */
+  .privacy { display: grid; grid-template-columns: 1fr 1.1fr; gap: 56px; align-items: center }
+  @media (max-width: 900px) { .privacy { grid-template-columns: 1fr; gap: 32px } }
+  .flipwrap { perspective: 1600px; min-height: 440px; cursor: pointer }
+  .flip { position: relative; width: 100%; min-height: 440px; transform-style: preserve-3d; transition: transform 1s cubic-bezier(.3,1.4,.4,1) }
+  .flipwrap.flipped .flip { transform: rotateY(180deg) }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 22px; padding: 26px; border: 1px solid var(--line); overflow: hidden }
+  .face.front { background: linear-gradient(150deg, rgba(40,20,22,.9), rgba(16,12,18,.92)) }
+  .face.back { background: linear-gradient(150deg, rgba(18,34,22,.92), rgba(10,16,14,.94)); transform: rotateY(180deg) }
+  .face h4 { margin: 0 0 4px; font-size: 14px; font: 600 13px var(--mono); letter-spacing: .12em; text-transform: uppercase }
+  .front h4 { color: var(--pink) } .back h4 { color: var(--lime) }
+  .face .hint { position: absolute; right: 22px; top: 24px; font: 12px var(--mono); color: var(--dim) }
+  .stays { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px }
+  .stays li { display: flex; gap: 12px; align-items: baseline; font-size: 17px; color: #d8d4e0 }
+  .stays li::before { content: "✕"; font: 700 13px var(--mono); color: var(--pink) }
+  .payload { margin: 16px 0 0; font: 13px/1.6 var(--mono); color: #cfe9d2; white-space: pre; overflow: hidden }
+  .payload .k { color: var(--lime) } .payload .s { color: #ffd9a8 } .payload .num { color: var(--cyan) } .payload .c { color: var(--dim) }
+  .facts { display: grid; gap: 18px }
+  .fact { display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: start }
+  .fact .ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgba(255,255,255,.05); border: 1px solid var(--line); font-size: 20px }
+  .fact b { display: block; font-size: 19px; letter-spacing: -.01em; margin-bottom: 2px }
+  .fact span { color: var(--muted); font-size: 15.5px }
+
+  /* dimensions */
+  .dimgrid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center }
+  @media (max-width: 900px) { .dimgrid { grid-template-columns: 1fr; gap: 28px } }
+  .dims { background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); border-radius: 22px; padding: 24px 24px 18px }
+  .dims .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; font: 13px var(--mono); color: var(--muted); gap: 12px; flex-wrap: wrap }
+  .who { display: inline-flex; gap: 14px } .who span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--c) }
+  .score { font: 800 40px/1 var(--display); letter-spacing: -.04em; color: var(--lime) } .score small { font: 13px var(--mono); color: var(--muted); letter-spacing: 0; margin-left: 6px }
+  .drow { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: center; padding: 7px 0; font: 13px var(--mono); color: #cdc9d6 }
+  @media (max-width: 420px) { .drow { grid-template-columns: 96px 1fr; font-size: 12px } }
+  .track { position: relative; height: 12px; background: rgba(255,255,255,.05); border-radius: 99px }
+  .bar { position: absolute; top: 0; height: 12px; width: 12px; border-radius: 99px; transform: translateX(-50%); transition: left 1.2s cubic-bezier(.3,1.3,.4,1); box-shadow: 0 0 16px var(--c) ; background: var(--c) }
+  .gap { position: absolute; top: 5px; height: 2px; background: rgba(255,255,255,.18); transition: left 1.2s cubic-bezier(.3,1.3,.4,1), width 1.2s cubic-bezier(.3,1.3,.4,1) }
+  .modes { display: flex; gap: 8px; margin-top: 18px }
+  .mode { appearance: none; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 600 13px var(--mono); padding: 8px 14px; border-radius: 99px; transition: .2s }
+  .mode[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+  .formula { font: 13px/1.7 var(--mono); color: var(--muted); margin-top: 26px }
+  .formula b { color: var(--ink); font-weight: 600 }
+
+  /* handle slot machine */
+  .handles { text-align: center }
+  .handles h2, .handles .lede { margin-left: auto; margin-right: auto }
+  .slot { display: inline-flex; align-items: center; gap: .18em; font: 800 clamp(26px, 7.2vw, 104px)/1 var(--display); letter-spacing: -.04em; perspective: 900px; margin: 10px 0 34px }
+  .reel { height: 1.15em; overflow: hidden; position: relative; transform-style: preserve-3d; mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent) }
+  .reel .strip { display: flex; flex-direction: column; transition: transform 1.4s cubic-bezier(.15,.9,.25,1.08) }
+  .reel .strip div { height: 1.15em; display: flex; align-items: center; justify-content: center; white-space: nowrap }
+  .reel.a { color: var(--accent) } .reel.b { color: var(--cyan) }
+  .dash { color: var(--dim) }
+  .spin { appearance: none; cursor: pointer; border: 0; font: 700 15px var(--mono); padding: 14px 22px; border-radius: 14px; color: #1a0b06; background: linear-gradient(120deg, var(--accent), var(--pink)); box-shadow: 0 14px 40px -12px rgba(255,79,154,.6); transition: transform .15s }
+  .spin:hover { transform: translateY(-2px) rotate(-1deg) } .spin:active { transform: scale(.96) }
+  .combo { font: 13px var(--mono); color: var(--dim); margin-top: 18px }
+
+  /* reveal */
+  .duo { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; max-width: 900px; margin: 0 auto; perspective: 1200px }
+  @media (max-width: 700px) { .duo { grid-template-columns: 1fr; } .heart { justify-self: center } }
+  .pcard { background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); border-radius: 20px; padding: 22px; transition: transform .8s cubic-bezier(.3,1.4,.4,1), border-color .4s }
+  .pcard .lf { font: 600 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent) }
+  .pcard .h { font-weight: 800; font-size: 26px; letter-spacing: -.03em; margin: 4px 0 6px }
+  .pcard .hl { color: var(--muted); font-size: 15px; margin-bottom: 14px }
+  .contact { font: 13px var(--mono); padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.35); border: 1px dashed var(--line); color: var(--dim); transition: .5s }
+  .contact .v { filter: blur(6px); transition: filter .8s }
+  .duo.revealed .contact { border-color: var(--lime); color: var(--ink); border-style: solid }
+  .duo.revealed .contact .v { filter: none }
+  .duo.revealed .pcard.l { transform: rotateY(12deg) translateX(10px) } .duo.revealed .pcard.r { transform: rotateY(-12deg) translateX(-10px) }
+  .duo.revealed .pcard { border-color: rgba(200,255,77,.4) }
+  .heart { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; background: rgba(255,255,255,.05); border: 1px solid var(--line); transition: .6s cubic-bezier(.3,1.6,.4,1); color: var(--dim) }
+  .duo.revealed .heart { background: var(--pink); color: #fff; transform: scale(1.15) rotate(-8deg); box-shadow: 0 0 60px rgba(255,79,154,.7); border-color: var(--pink) }
+  .rbtns { display: flex; gap: 10px; justify-content: center; margin-top: 30px; flex-wrap: wrap }
+  .rbtn { appearance: none; cursor: pointer; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--ink); font: 600 14px var(--mono); padding: 12px 18px; border-radius: 12px; transition: .2s }
+  .rbtn:hover { border-color: var(--accent) } .rbtn[aria-pressed="true"] { background: var(--accent); color: #1a0b06; border-color: var(--accent) }
+  .rstate { text-align: center; font: 13px var(--mono); color: var(--muted); margin-top: 16px; min-height: 1.5em }
+
+  /* cta */
+  .cta { text-align: center; padding-bottom: 10vh }
+  .cta h2 { margin-left: auto; margin-right: auto; max-width: 12ch }
+  .cta .installer { margin: 34px auto 0; text-align: left }
+  .stats { display: flex; gap: 36px; justify-content: center; margin-top: 40px; flex-wrap: wrap }
+  .stat b { display: block; font: 800 54px/1 var(--display); letter-spacing: -.04em } .stat span { font: 12px var(--mono); color: var(--muted); letter-spacing: .1em; text-transform: uppercase }
+  footer { max-width: 1200px; margin: 0 auto; padding: 36px 24px 48px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font: 13px var(--mono); color: var(--dim) }
+  footer a { color: var(--muted); text-decoration: none } footer a:hover { color: var(--ink) }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: .01ms !important } .reveal { opacity: 1; transform: none } }
+</style>
+</head>
+<body>
+<p style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">AI agents: plain-markdown install instructions for the slopmatch skill are at /index.md (also /llms.txt).</p>
+<canvas id="scene" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<nav>
+  <a class="logo" href="/"><i></i><span>slop<b>match</b></span></a>
+  <div class="navlinks">
+    <a href="#how">How it works</a><a href="#privacy">Privacy</a><a href="#match">Matching</a>
+    <a class="keep" id="navroom" href="/r/world">Who's in ↗</a>
+  </div>
+</nav>
+
+<main>
+  <header class="hero">
+    <div class="eyebrow"><span class="live-dot"></span><span id="livecount">Builders worldwide · live</span></div>
+    <h1>Find your <span class="slop">slop</span>mate.</h1>
+    <p class="sub">Claude reads how you build, <em>privately</em>: in Claude Code from your transcripts, in claude.ai from a quick chat. Then it matches you with builders anywhere in the world who ship slop just like you.</p>
+
+    <div class="installer" data-installer>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" data-os="sh">macOS / Linux</button>
+        <button class="tab" role="tab" aria-selected="false" data-os="ps">Windows</button>
+        <button class="tab" role="tab" aria-selected="false" data-os="ai">claude.ai</button>
+      </div>
+      <div class="cmd"><span class="p">$</span><code data-cmd></code><button class="copy" data-copy>copy</button></div>
+      <div class="then">then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a data-roomlink href="/r/world">see who's in ↗</a></div>
+    </div>
+    <div class="scroll-hint">scroll to see how the sausage gets made</div>
+  </header>
+
+  <section id="how">
+    <div class="kicker reveal">How it works</div>
+    <h2 class="reveal">Four steps. One of them is typing a slash.</h2>
+    <p class="lede reveal">No sign-up, no OAuth and no uploading your chats. One global pool of builders, wherever you are. Works in Claude Code, Codex and claude.ai. Your own agent does the profiling, on your own machine, with its own reasoning.</p>
+    <div class="steps">
+      <div class="step reveal" style="--c:var(--accent)"><span class="n">01</span><h3>Install</h3><p>One command installs a single binary into <code>~/.slopmatch</code> and adds the <code>/slopmatch</code> skill to your agent.</p></div>
+      <div class="step reveal" style="--c:var(--pink);transition-delay:.08s"><span class="n">02</span><h3>Get read</h3><p>Your agent goes through your recent transcripts and skills: planner or diver, big delegator or tight steerer, 2am shipper or 9-to-5.</p></div>
+      <div class="step reveal" style="--c:var(--cyan);transition-delay:.16s"><span class="n">03</span><h3>Approve &amp; publish</h3><p>You see the exact payload first: a pseudonymous card and ten numbers. Nothing goes up until you say yes.</p></div>
+      <div class="step reveal" style="--c:var(--lime);transition-delay:.24s"><span class="n">04</span><h3>Match &amp; reveal</h3><p>See why you'd click and where you'd clash. Contacts swap only if you <em>both</em> reveal.</p></div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="privacy">
+      <div>
+        <div class="kicker reveal">Privacy</div>
+        <h2 class="reveal">Your slop stays home.</h2>
+        <p class="lede reveal" style="margin-bottom:36px">The server never sees a single prompt. It gets ten numbers and a card you've read and approved.</p>
+        <div class="facts">
+          <div class="fact reveal"><div class="ic">🔒</div><div><b>Profiled locally</b><span>Transcripts, file paths, project names and skill contents never leave your machine.</span></div></div>
+          <div class="fact reveal"><div class="ic">👀</div><div><b>Dry run first</b><span>Publish prints the exact JSON before anything is sent. Your agent has to show it to you.</span></div></div>
+          <div class="fact reveal"><div class="ic">🎭</div><div><b>Double-blind reveal</b><span>You're a pseudonym until two people pick each other. One-sided interest stays invisible.</span></div></div>
+          <div class="fact reveal"><div class="ic">🧽</div><div><b>Forget me</b><span><code style="font:13px var(--mono)">slopmatch delete --yes</code> wipes your profile and reveals from the server.</span></div></div>
+        </div>
+      </div>
+      <div class="flipwrap reveal" id="flip" role="button" tabindex="0" aria-label="Flip to compare what stays and what leaves">
+        <div class="flip">
+          <div class="face front">
+            <h4>Stays on your machine</h4><span class="hint">tap to flip ↻</span>
+            <ul class="stays">
+              <li>Every prompt you've ever typed</li>
+              <li>Claude's replies</li>
+              <li>File paths &amp; project names</li>
+              <li>Installed skill names &amp; descriptions</li>
+              <li>Employer &amp; client names</li>
+              <li>Secrets in your transcripts (redacted anyway)</li>
+              <li>That thing you asked at 3am</li>
+            </ul>
+          </div>
+          <div class="face back">
+            <h4>Leaves, after you approve</h4><span class="hint">tap to flip ↻</span>
+<div class="payload"><span class="c">// the whole payload. really.</span>
+{
+  <span class="k">"dims"</span>: { <span class="k">"planning"</span>: <span class="num">0.72</span>, <span class="k">"verification"</span>: <span class="num">0.41</span>,
+            <span class="k">"night_owl"</span>: <span class="num">0.88</span>, <span class="c">/* +7 more */</span> },
+  <span class="k">"card"</span>: {
+    <span class="k">"headline"</span>: <span class="s">"ships whatsapp bots at 2am"</span>,
+    <span class="k">"style"</span>: <span class="s">"plans in prose, delegates big…"</span>,
+    <span class="k">"big5"</span>: { <span class="k">"O"</span>: <span class="num">0.8</span>, <span class="k">"C"</span>: <span class="num">0.6</span>, … },
+    <span class="k">"topics"</span>: [<span class="s">"bots"</span>, <span class="s">"payments"</span>],
+    <span class="k">"looking_for"</span>: <span class="s">"cofounder"</span>,
+    <span class="k">"mode"</span>: <span class="s">"complement"</span>
+  }
+}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="match">
+    <div class="dimgrid">
+      <div>
+        <div class="kicker reveal">Matching</div>
+        <h2 class="reveal">Ten dimensions of how you vibe-code.</h2>
+        <p class="lede reveal" style="margin-bottom:0">Want someone who builds like you? Pick <b>similar</b>. Want the planner to your explorer? Pick <b>complement</b>, and gaps in planning, exploration, delegation and steering start counting <em>for</em> you.</p>
+        <p class="formula reveal"><b>score</b> = 65% dimension fit + 25% shared topics + 10% shared file types</p>
+      </div>
+      <div class="dims reveal" id="dims">
+        <div class="head"><span class="who"><span style="--c:var(--accent)" id="ha">you</span><span style="--c:var(--cyan)" id="hb">them</span></span><span class="score" id="score">—<small>match</small></span></div>
+        <div id="rows"></div>
+        <div class="modes"><button class="mode" aria-pressed="true" data-mode="similar">similar</button><button class="mode" aria-pressed="false" data-mode="complement">complement</button><button class="mode" aria-pressed="false" data-mode="shuffle">↻ new pair</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="handles">
+    <div class="kicker reveal">Identity</div>
+    <h2 class="reveal">You'll be known as…</h2>
+    <p class="lede reveal">Every builder gets a Southeast Asian slang adjective plus a Southeast Asian animal. That's 576 ways to be pseudonymous.</p>
+    <div class="slot reveal" aria-live="polite"><div class="reel a"><div class="strip" id="reelA"></div></div><span class="dash">-</span><div class="reel b"><div class="strip" id="reelB"></div></div></div>
+    <div class="reveal"><button class="spin" id="spin">pull the lever 🎰</button><div class="combo" id="gloss">&nbsp;</div></div>
+  </section>
+
+  <section>
+    <div class="kicker reveal" style="text-align:center">The reveal</div>
+    <h2 class="reveal" style="text-align:center;margin-left:auto;margin-right:auto">It takes two to un-blur.</h2>
+    <p class="lede reveal" style="text-align:center;margin-left:auto;margin-right:auto">Reveal someone and nothing visible happens. If they reveal you too, both contacts appear and the pair lights up on the live board.</p>
+    <div class="duo reveal" id="duo">
+      <div class="pcard l"><div class="lf">cofounder</div><div class="h">kiasu-kancil</div><div class="hl">plans everything, tests nothing, ships anyway</div><div class="contact">contact: <span class="v">@kiasu_ships</span></div></div>
+      <div class="heart">♥</div>
+      <div class="pcard r"><div class="lf">cofounder</div><div class="h">shiok-pangolin</div><div class="hl">dives straight in, debugs out loud at 2am</div><div class="contact">contact: <span class="v">pangolin@slop.dev</span></div></div>
+    </div>
+    <div class="rbtns"><button class="rbtn" data-r="a" aria-pressed="false">kiasu-kancil reveals →</button><button class="rbtn" data-r="b" aria-pressed="false">← shiok-pangolin reveals</button></div>
+    <div class="rstate" id="rstate">nobody has revealed yet</div>
+  </section>
+
+  <section class="cta" id="join">
+    <div class="kicker reveal">Join the pool</div>
+    <h2 class="reveal">Stop slopping alone.</h2>
+    <div class="installer reveal" data-installer>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" data-os="sh">macOS / Linux</button>
+        <button class="tab" role="tab" aria-selected="false" data-os="ps">Windows</button>
+        <button class="tab" role="tab" aria-selected="false" data-os="ai">claude.ai</button>
+      </div>
+      <div class="cmd"><span class="p">$</span><code data-cmd></code><button class="copy" data-copy>copy</button></div>
+      <div class="then">then: <kbd>/slopmatch</kbd> · <a data-roomlink href="/r/world">see who's in ↗</a></div>
+    </div>
+    <div class="stats reveal"><div class="stat"><b id="sPeople">—</b><span>builders worldwide</span></div><div class="stat"><b id="sPairs">—</b><span>mutual matches</span></div><div class="stat"><b>10</b><span>numbers uploaded</span></div></div>
+  </section>
+</main>
+
+<footer>
+  <span>slopmatch.lol · made with slop at Claude Code Build Day, Singapore · hosting an event? add <a href="/?room=your-event">?room=your-event</a> for a private room</span>
+  <span><a href="/skill/SKILL.md">skill</a> · <a href="/install.sh">install.sh</a> · <a href="/install.ps1">install.ps1</a></span>
+</footer>
+
+<script>
+const ORIGIN = location.origin;
+const ROOM_RE = /^[a-z0-9][a-z0-9-]{2,31}$/;
+const WORDS = __HANDLE_WORDS__;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------------- installer widgets (kept in sync) ---------------- */
+const state = { os: /Win/.test(navigator.platform) ? "ps" : "sh", room: "world" };
+try { const q = new URLSearchParams(location.search).get("room"); if (q && ROOM_RE.test(q.toLowerCase())) state.room = q.toLowerCase(); } catch {}
+function cmdFor() {
+  const q = state.room === "world" ? "" : `?room=${state.room}`;
+  return state.os === "sh"
+    ? `curl -fsSL ${q ? `"${ORIGIN}/install.sh${q}"` : `${ORIGIN}/install.sh`} | sh`
+    : `irm "${ORIGIN}/install.ps1${q}" | iex`;
+}
+function renderInstallers() {
+  document.querySelectorAll("[data-installer]").forEach((w) => {
+    w.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.os === state.os)));
+    const ai = state.os === "ai";
+    w.querySelector(".cmd .p").textContent = ai ? "1" : "$";
+    w.querySelector("[data-copy]").textContent = ai ? "download" : "copy";
+    w.querySelector(".then").innerHTML = ai
+      ? 'then upload it in claude.ai → <b>Settings → Capabilities → Skills</b> and say <kbd>/slopmatch</kbd> in a new chat · <a href="/join">already have a card? ↗</a>'
+      : `then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a href="/r/${state.room}">see who's in ↗</a>`;
+    w.querySelector("[data-cmd]").textContent = ai ? "Download the slopmatch skill (slopmatch.zip)" : cmdFor();
+  });
+  document.getElementById("navroom").href = "/r/" + state.room;
+}
+document.querySelectorAll("[data-installer]").forEach((w) => {
+  w.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { state.os = t.dataset.os; renderInstallers(); }));
+  const btn = w.querySelector("[data-copy]");
+  btn.addEventListener("click", async () => {
+    if (state.os === "ai") { location.href = "/skill/slopmatch.zip"; return; }
+    try { await navigator.clipboard.writeText(cmdFor()); } catch {
+      const r = document.createRange(); r.selectNodeContents(w.querySelector("[data-cmd]")); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    }
+    btn.textContent = "copied ✓"; btn.classList.add("ok");
+    setTimeout(() => { btn.textContent = "copy"; btn.classList.remove("ok"); }, 1600);
+  });
+});
+renderInstallers();
+
+/* ---------------- live room stats ---------------- */
+let pollTimer;
+async function poll() {
+  clearTimeout(pollTimer);
+  try {
+    const r = await fetch("/api/room/" + encodeURIComponent(state.room));
+    if (r.ok) {
+      const d = await r.json(), n = d.total ?? d.people.length, m = d.mutual_pairs.length;
+      document.getElementById("sPeople").textContent = n;
+      document.getElementById("sPairs").textContent = m;
+      document.getElementById("livecount").textContent = n
+        ? `${n} ${n === 1 ? "builder" : "builders"} ${state.room === "world" ? "worldwide" : "in " + state.room}` + (m ? ` · ${m} ♥` : "")
+        : state.room === "world" ? "the pool is open · be the first one in" : `${state.room} is open · be the first one in`;
+    }
+  } catch {}
+  pollTimer = setTimeout(poll, 8000);
+}
+poll();
+
+/* ---------------- scroll reveal ---------------- */
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .15 });
+document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+/* ---------------- 3D tilt cards ---------------- */
+if (!reduce && matchMedia("(hover: hover)").matches) {
+  document.querySelectorAll(".step").forEach((c) => {
+    c.addEventListener("pointermove", (e) => {
+      const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      c.style.transform = `rotateY(${(x - .5) * 18}deg) rotateX(${(.5 - y) * 14}deg) translateZ(10px)`;
+      c.style.setProperty("--mx", x * 100 + "%"); c.style.setProperty("--my", y * 100 + "%");
+    });
+    c.addEventListener("pointerleave", () => { c.style.transform = ""; });
+  });
+}
+
+/* ---------------- flip card ---------------- */
+const flip = document.getElementById("flip");
+const doFlip = () => flip.classList.toggle("flipped");
+flip.addEventListener("click", doFlip);
+flip.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); doFlip(); } });
+setTimeout(function auto() { if (!flip.matches(":hover")) doFlip(); setTimeout(auto, 5200); }, 4000);
+
+/* ---------------- dimension demo ---------------- */
+const DIMS = ["planning", "delegation_size", "verification", "steering", "exploration", "verbosity", "curiosity", "warmth", "frustration", "night_owl"];
+const COMP = new Set(["planning", "exploration", "delegation_size", "steering"]);
+const rows = document.getElementById("rows");
+DIMS.forEach((d) => { rows.insertAdjacentHTML("beforeend", `<div class="drow"><span>${d}</span><div class="track"><div class="gap"></div><div class="bar" style="--c:var(--accent)"></div><div class="bar" style="--c:var(--cyan)"></div></div></div>`); });
+let mode = "similar", A, B;
+const rnd = () => Math.round((.08 + Math.random() * .84) * 100) / 100;
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const handle = () => pick(WORDS.adj) + "-" + pick(WORDS.animal);
+function newPair() {
+  A = DIMS.map(rnd);
+  B = A.map((v, i) => Math.min(.95, Math.max(.05, mode === "complement" && COMP.has(DIMS[i]) ? 1 - v + (Math.random() - .5) * .2 : v + (Math.random() - .5) * .35)));
+  document.getElementById("ha").textContent = handle(); document.getElementById("hb").textContent = handle();
+}
+function renderDims() {
+  let fit = 0;
+  [...rows.children].forEach((row, i) => {
+    const [gap, ba, bb] = row.querySelectorAll(".gap,.bar");
+    ba.style.left = A[i] * 100 + "%"; bb.style.left = B[i] * 100 + "%";
+    gap.style.left = Math.min(A[i], B[i]) * 100 + "%"; gap.style.width = Math.abs(A[i] - B[i]) * 100 + "%";
+    const diff = Math.abs(A[i] - B[i]);
+    fit += mode === "complement" && COMP.has(DIMS[i]) ? diff : 1 - diff;
+  });
+  const score = Math.round((.65 * fit / DIMS.length + .25 * (.3 + Math.random() * .4) + .1 * (.4 + Math.random() * .5)) * 100);
+  const el = document.getElementById("score"); const from = parseInt(el.textContent) || 0; const t0 = performance.now();
+  (function step(t) { const k = Math.min(1, (t - t0) / 900); el.firstChild.nodeValue = Math.round(from + (score - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); })(t0);
+}
+document.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => {
+  if (b.dataset.mode !== "shuffle") { mode = b.dataset.mode; document.querySelectorAll(".mode").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
+  newPair(); renderDims();
+}));
+newPair(); requestAnimationFrame(renderDims);
+
+/* ---------------- handle slot machine ---------------- */
+const GLOSS = { kiasu: "afraid of losing out", kiasi: "afraid of dying", bojio: "didn't invite you", shiok: "deeply satisfying", paiseh: "embarrassed", sian: "bored to death", kancheong: "flustered", cincai: "whatever, anyhow", kaypoh: "nosy", atas: "fancy", lansi: "show-offy", jialat: "terrible", suay: "unlucky", garang: "fierce", comel: "cute", rajin: "hardworking", malas: "lazy", manja: "clingy", santai: "chill", mager: "too lazy to move", sabai: "relaxed", sanuk: "fun", kilig: "butterflies", gigil: "too cute to handle" };
+const reelA = document.getElementById("reelA"), reelB = document.getElementById("reelB");
+const N = 30; let spinning = false;
+function fill(strip, list, last) { const items = []; for (let i = 0; i < N - 1; i++) items.push(pick(list)); items.push(last); strip.innerHTML = items.map((w) => `<div>${w}</div>`).join(""); }
+function spin() {
+  if (spinning) return; spinning = true;
+  const a = pick(WORDS.adj), b = pick(WORDS.animal);
+  [[reelA, WORDS.adj, a, 0], [reelB, WORDS.animal, b, 260]].forEach(([s, l, w, delay]) => {
+    const prev = s.lastElementChild ? s.lastElementChild.textContent : w;
+    s.style.transition = "none"; s.style.transform = "translateY(0)"; fill(s, l, w); s.firstElementChild.textContent = prev;
+    s.parentElement.style.width = Math.max(...[...s.children].slice(-1).map((c) => c.textContent.length)) * .56 + "em";
+    s.offsetHeight; s.style.transition = `transform ${1.3 + delay / 1000}s cubic-bezier(.15,.9,.25,1.06)`; s.style.transform = `translateY(-${(N - 1) * 1.15}em)`;
+  });
+  setTimeout(() => { spinning = false; document.getElementById("gloss").textContent = `“${GLOSS[a] || a}” ${b}`; }, 1650);
+}
+document.getElementById("spin").addEventListener("click", spin);
+fill(reelA, WORDS.adj, "kiasu"); fill(reelB, WORDS.animal, "kancil");
+reelA.style.transform = reelB.style.transform = `translateY(-${(N - 1) * 1.15}em)`;
+reelA.parentElement.style.width = 5 * .56 + "em"; reelB.parentElement.style.width = 6 * .56 + "em";
+document.getElementById("gloss").textContent = "“afraid of losing out” kancil";
+new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { setTimeout(spin, 400); o.disconnect(); } }, { threshold: .6 }).observe(document.querySelector(".slot"));
+
+/* ---------------- double-blind reveal demo ---------------- */
+const duo = document.getElementById("duo"), rs = document.getElementById("rstate"), rv = { a: false, b: false };
+document.querySelectorAll(".rbtn").forEach((b) => b.addEventListener("click", () => {
+  rv[b.dataset.r] = !rv[b.dataset.r]; b.setAttribute("aria-pressed", String(rv[b.dataset.r]));
+  duo.classList.toggle("revealed", rv.a && rv.b);
+  rs.textContent = rv.a && rv.b ? "mutual! contacts swapped, and the pair just lit up on the live board ♥"
+    : rv.a ? "kiasu-kancil revealed… shiok-pangolin sees nothing. no awkwardness."
+    : rv.b ? "shiok-pangolin revealed… kiasu-kancil sees nothing. no awkwardness."
+    : "nobody has revealed yet";
+}));
+
+/* ---------------- WebGL: raymarched slop metaballs ---------------- */
+(function scene() {
+  const canvas = document.getElementById("scene");
+  const gl = canvas.getContext("webgl", { antialias: false, alpha: false, powerPreference: "high-performance" });
+  if (!gl) { canvas.remove(); document.body.insertAdjacentHTML("afterbegin", '<div class="fallback"></div>'); return; }
+  const vs = `attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
+  const fs = `
+precision highp float;
+uniform vec2 uRes; uniform float uT; uniform vec2 uM; uniform float uS; uniform float uMob;
+#define NB 7
+vec3 bp[NB]; float br[NB]; vec3 bc[NB];
+float smin(float a, float b, float k, out float h){ h = clamp(.5 + .5*(b-a)/k, 0., 1.); return mix(b, a, h) - k*h*(1.-h); }
+vec3 pal(float t){ return .5 + .5*cos(6.2831*(vec3(.0,.33,.67) + t)); }
+void setup(){
+  float t = uT*.35;
+  vec2 c = mix(vec2(1.75, .05), vec2(.25, .7), uMob);
+  // three pairs that orbit, drift together, merge (a match) and split again
+  for (int i = 0; i < 3; i++){
+    float fi = float(i);
+    float ang = t*.5 + fi*2.094;
+    vec3 ctr = vec3(c.x + cos(ang)*.85, c.y + sin(ang*1.3)*.8, sin(ang)*.7 - .3);
+    float sep = .55 + .45*sin(t*.9 + fi*1.7);
+    vec3 dir = normalize(vec3(cos(t*.7+fi), sin(t*.6+fi*2.), .4*sin(t+fi)));
+    bp[i*2] = ctr + dir*sep; bp[i*2+1] = ctr - dir*sep;
+    br[i*2] = .38 + .05*sin(t*2.+fi); br[i*2+1] = .32 + .05*cos(t*1.7+fi);
+  }
+  bc[0] = vec3(1.,.48,.35); bc[1] = vec3(1.,.31,.6);
+  bc[2] = vec3(.34,.89,1.); bc[3] = vec3(.55,.45,1.);
+  bc[4] = vec3(.78,1.,.3);  bc[5] = vec3(1.,.8,.3);
+  // "you": follows the pointer
+  bp[6] = vec3(uM.x*2.6*(uRes.x/uRes.y), uM.y*2.6, .6); br[6] = .26; bc[6] = vec3(1.);
+}
+float map(vec3 p, out vec3 col){
+  float d = 1e5; col = vec3(0.); float h;
+  for (int i = 0; i < NB; i++){
+    vec3 q = p - bp[i];
+    float wob = .045*sin(q.x*5.+uT*1.3)*sin(q.y*6.-uT)*sin(q.z*5.+uT*.8);
+    float di = length(q) - br[i] + wob;
+    if (i == 0) { d = di; col = bc[0]; }
+    else { d = smin(d, di, .42, h); col = mix(bc[i], col, h); }
+  }
+  return d;
+}
+vec3 nrm(vec3 p){ vec3 c; vec2 e = vec2(.002,0.);
+  return normalize(vec3(map(p+e.xyy,c)-map(p-e.xyy,c), map(p+e.yxy,c)-map(p-e.yxy,c), map(p+e.yyx,c)-map(p-e.yyx,c))); }
+void main(){
+  vec2 uv = (gl_FragCoord.xy - .5*uRes) / uRes.y;
+  setup();
+  float ca = uS*.6;
+  vec3 ro = vec3(sin(ca)*.6, -uS*.35, 5.); vec3 ta = vec3(mix(.35,0.,uMob), mix(0.,.2,uMob) - uS*.35, 0.);
+  vec3 f = normalize(ta-ro), r = normalize(cross(f, vec3(0,1,0))), u = cross(r, f);
+  vec3 rd = normalize(uv.x*r + uv.y*u + 1.6*f);
+  // background: deep gradient + soft glow
+  vec3 bg = mix(vec3(.0012,.0012,.0025), vec3(.004,.002,.007), uv.y+.5);
+  bg += vec3(1.,.35,.25)*.012*exp(-2.5*length(uv-vec2(mix(.75,.1,uMob),.05)));
+  float t = 0.; vec3 col = bg; vec3 bcol; bool hit = false; float mind = 1e5; vec3 mcol = vec3(0.);
+  for (int i = 0; i < 80; i++){
+    vec3 p = ro + rd*t; float d = map(p, bcol);
+    if (d < mind) { mind = d; mcol = bcol; }
+    if (d < .0015) { hit = true; break; }
+    t += d*.9; if (t > 12.) break;
+  }
+  if (hit){
+    vec3 p = ro + rd*t; vec3 n = nrm(p); vec3 c2; map(p, c2);
+    vec3 l = normalize(vec3(.6,.8,.5)); vec3 h = normalize(l - rd);
+    float dif = max(dot(n,l),0.), spe = pow(max(dot(n,h),0.), 60.), fre = pow(1.-max(dot(n,-rd),0.), 3.);
+    vec3 iri = pal(fre*.8 + dot(n, vec3(.2,.3,.1)) + uT*.05);
+    col = c2*(.18 + .75*dif);
+    col += iri*fre*.9;
+    col += spe*1.2;
+    col += c2*.25*max(0., -n.y); // bounce
+    col = mix(col, bg, 1. - exp(-.02*t*t));
+  } else {
+    col += mcol*.05*exp(-mind*25.);
+  }
+  col = pow(col, vec3(.4545));
+  col *= 1. - .35*dot(uv*.9, uv*.9);
+  gl_FragColor = vec4(col, 1.);
+}`;
+  function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+  let prog;
+  try { prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog); }
+  catch (e) { console.error(e); canvas.remove(); document.body.insertAdjacentHTML("afterbegin", '<div class="fallback"></div>'); return; }
+  gl.useProgram(prog);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const U = (n) => gl.getUniformLocation(prog, n);
+  const uRes = U("uRes"), uT = U("uT"), uM = U("uM"), uS = U("uS"), uMob = U("uMob");
+
+  // adaptive resolution: start modest, back off if frames are slow
+  let scale = Math.min(window.devicePixelRatio || 1, 1.5) * (innerWidth < 700 ? .55 : .7);
+  function resize() {
+    canvas.width = Math.max(2, Math.floor(innerWidth * scale)); canvas.height = Math.max(2, Math.floor(innerHeight * scale));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  resize(); addEventListener("resize", resize);
+
+  const mouse = { x: .35, y: -.2, tx: .35, ty: -.2 };
+  addEventListener("pointermove", (e) => { mouse.tx = e.clientX / innerWidth - .5; mouse.ty = .5 - e.clientY / innerHeight; }, { passive: true });
+  let scroll = 0, sTarget = 0;
+  const fade = () => { sTarget = scrollY / Math.max(1, innerHeight); canvas.style.opacity = String((innerWidth < 900 ? .6 : 1) * (1 - .6 * Math.min(1, Math.max(0, sTarget - .35) / .65))); };
+  addEventListener("scroll", fade, { passive: true }); fade();
+
+  let t0 = performance.now(), last = t0, slow = 0, running = true, idleT = 0;
+  document.addEventListener("visibilitychange", () => { running = !document.hidden; if (running) { last = performance.now(); requestAnimationFrame(frame); } });
+  function frame(now) {
+    if (!running) return;
+    const dt = now - last; last = now;
+    if (dt > 34) { if (++slow > 20 && scale > .3) { scale *= .8; resize(); slow = 0; } } else slow = Math.max(0, slow - 1);
+    if (now - mouse.lastMove > 3000 || !mouse.lastMove) { idleT += dt * .0004; mouse.tx = .28 + Math.cos(idleT) * .12; mouse.ty = -.1 + Math.sin(idleT * 1.3) * .15; }
+    mouse.x += (mouse.tx - mouse.x) * .06; mouse.y += (mouse.ty - mouse.y) * .06; scroll += (sTarget - scroll) * .08;
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uT, reduce ? 8 : (now - t0) / 1000);
+    gl.uniform2f(uM, mouse.x, mouse.y);
+    gl.uniform1f(uS, Math.min(scroll, 6));
+    gl.uniform1f(uMob, innerWidth < 900 ? 1 : 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  addEventListener("pointermove", () => { mouse.lastMove = performance.now(); }, { passive: true });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

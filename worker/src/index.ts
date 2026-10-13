@@ -41,6 +41,8 @@ interface ProfileRow {
 }
 
 const ROOM_RE = /^[a-z0-9][a-z0-9-]{2,31}$/;
+/** Everyone lands here unless they opt into a private room (e.g. for an event). */
+const DEFAULT_ROOM = "world";
 // Pseudonyms: Southeast Asian slang adjective + Southeast Asian animal, e.g. "kiasu-kancil", "bojio-sunbear".
 const ADJ = [
   "kiasu", "kiasi", "bojio", "shiok", "paiseh", "sian", "kancheong", "cincai", "kaypoh", "atas", "lansi", "jialat", // SG/MY
@@ -265,18 +267,21 @@ async function deleteProfile(req: Request, env: Env) {
 /** Public, projector-friendly view: pseudonyms, headlines, mutual pairs. No contacts, no scores. */
 async function roomData(room: string, env: Env) {
   if (!ROOM_RE.test(room)) throw new HttpError(404, "no such room");
+  // The global room can be large: show the newest 200 and report the total separately.
+  const total = await env.DB.prepare("SELECT COUNT(*) AS n FROM profiles WHERE room = ?").bind(room).first<number>("n");
   const { results } = await env.DB.prepare(
-    "SELECT id, handle, card FROM profiles WHERE room = ? ORDER BY created_at",
+    "SELECT id, handle, card FROM profiles WHERE room = ? ORDER BY created_at DESC LIMIT 200",
   ).bind(room).all<{ id: string; handle: string; card: string }>();
   const { results: pairs } = await env.DB.prepare(
     `SELECT a.handle AS a, b.handle AS b FROM reveals r1
        JOIN reveals r2 ON r2.from_id = r1.to_id AND r2.to_id = r1.from_id
        JOIN profiles a ON a.id = r1.from_id
        JOIN profiles b ON b.id = r1.to_id
-      WHERE a.room = ? AND r1.from_id < r1.to_id`,
+      WHERE a.room = ? AND r1.from_id < r1.to_id ORDER BY MAX(r1.created_at, r2.created_at) DESC LIMIT 100`,
   ).bind(room).all<{ a: string; b: string }>();
   return json({
     room,
+    total: total ?? results.length,
     people: results.map((r) => {
       const c = JSON.parse(r.card) as Card;
       return { handle: r.handle, headline: c.headline, topics: c.topics, looking_for: c.looking_for };
@@ -288,6 +293,47 @@ async function roomData(room: string, env: Env) {
 // ---------------------------------------------------------------- binaries & installers
 // The skill is bundled as text (wrangler `rules`) so installers can drop it straight into the agent.
 import SKILL_MD from "../../skills/slopmatch/SKILL.md";
+import AGENTS_MD from "./agents.md";
+import LANDING_HTML from "./landing.html";
+import JOIN_HTML from "./join.html";
+
+const LANDING = LANDING_HTML.replace("__HANDLE_WORDS__", JSON.stringify({ adj: ADJ, animal: ANIMAL }));
+
+/** Browsers get the landing page; curl, agents and anything asking for markdown get install instructions. */
+function wantsHtml(req: Request) {
+  const accept = req.headers.get("accept") || "";
+  const ua = req.headers.get("user-agent") || "";
+  if (/text\/markdown|text\/plain/.test(accept)) return false;
+  if (/claude|anthropic|openai|gpt|codex|cursor|copilot|gemini|perplexity|bot\b|crawler|spider|agent|curl|wget|httpie|python|node|undici|axios|bun\/|deno|go-http/i.test(ua)) return false;
+  return accept.includes("text/html") && /mozilla/i.test(ua);
+}
+
+/** claude.ai uploads skills as a zip holding one folder: slopmatch/SKILL.md. Stored (uncompressed) is enough. */
+function zipOne(name: string, text: string): Uint8Array {
+  const data = new TextEncoder().encode(text), fname = new TextEncoder().encode(name);
+  let crc = ~0;
+  for (const b of data) { crc ^= b; for (let k = 0; k < 8; k++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1)); }
+  crc = ~crc >>> 0;
+  const local = new DataView(new ArrayBuffer(30)), central = new DataView(new ArrayBuffer(46)), end = new DataView(new ArrayBuffer(22));
+  const DOS_DATE = (2026 - 1980) << 9 | 1 << 5 | 1; // 2026-01-01; zip needs some date
+  local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(12, DOS_DATE, true);
+  local.setUint32(14, crc, true); local.setUint32(18, data.length, true); local.setUint32(22, data.length, true); local.setUint16(26, fname.length, true);
+  central.setUint32(0, 0x02014b50, true); central.setUint16(4, 20, true); central.setUint16(6, 20, true); central.setUint16(14, DOS_DATE, true);
+  central.setUint32(16, crc, true); central.setUint32(20, data.length, true); central.setUint32(24, data.length, true); central.setUint16(28, fname.length, true);
+  const cdOffset = 30 + fname.length + data.length, cdSize = 46 + fname.length;
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, 1, true); end.setUint16(10, 1, true); end.setUint32(12, cdSize, true); end.setUint32(16, cdOffset, true);
+  const parts = [new Uint8Array(local.buffer), fname, data, new Uint8Array(central.buffer), fname, new Uint8Array(end.buffer)];
+  const out = new Uint8Array(parts.reduce((n, x) => n + x.length, 0));
+  let o = 0; for (const x of parts) { out.set(x, o); o += x.length; }
+  return out;
+}
+const SKILL_ZIP = zipOne("slopmatch/SKILL.md", SKILL_MD);
+
+function markdown(url: URL) {
+  return new Response(AGENTS_MD.replaceAll("__BASE__", url.origin), {
+    headers: { "content-type": "text/markdown; charset=utf-8", "cache-control": "public, max-age=60", vary: "Accept, User-Agent" },
+  });
+}
 
 async function download(name: string, req: Request, env: Env) {
   if (!BINARIES.has(name)) throw new HttpError(404, "no such binary");
@@ -306,7 +352,7 @@ async function download(name: string, req: Request, env: Env) {
 function installer(path: string, url: URL) {
   // Only ever interpolate values we have validated: the origin and a ROOM_RE-checked room.
   const roomParam = (url.searchParams.get("room") || "").toLowerCase();
-  const room = ROOM_RE.test(roomParam) ? roomParam : "";
+  const room = ROOM_RE.test(roomParam) ? roomParam : DEFAULT_ROOM;
   const tpl = path === "/install.sh" ? INSTALL_SH : INSTALL_PS1;
   const body = tpl.replaceAll("__BASE__", url.origin).replaceAll("__ROOM__", room);
   return new Response(body, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
@@ -401,14 +447,18 @@ export default {
           headers: { "content-type": "text/markdown; charset=utf-8", "cache-control": "public, max-age=60" },
         });
       }
+      if (p === "/llms.txt" || p === "/index.md") return markdown(url);
+      if (p === "/join") return new Response(JOIN_HTML, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60" } });
+      if (p === "/skill/slopmatch.zip") {
+        return new Response(SKILL_ZIP, {
+          headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="slopmatch.zip"', "cache-control": "public, max-age=60" },
+        });
+      }
       if (p === "/") {
-        return new Response(
-          "slopmatch\n\n" +
-          `Mac/Linux:  curl -fsSL ${url.origin}/install.sh?room=<room> | sh\n` +
-          `Windows:    irm "${url.origin}/install.ps1?room=<room>" | iex\n\n` +
-          `The installer also adds the /slopmatch skill to Claude Code (and Codex if present): ${url.origin}/skill/SKILL.md\n` +
-          "Open /r/<room> on the projector.\n",
-        );
+        if (!wantsHtml(req)) return markdown(url);
+        return new Response(LANDING, {
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60", vary: "Accept, User-Agent" },
+        });
       }
       return err(404, "not found");
     } catch (e) {
@@ -450,7 +500,8 @@ async function tick() {
   try {
     const r = await fetch("/api/room/" + encodeURIComponent(room)); if (!r.ok) return;
     const d = await r.json();
-    document.getElementById("count").textContent = d.people.length + (d.people.length === 1 ? " builder · " : " builders · ") + d.mutual_pairs.length + (d.mutual_pairs.length === 1 ? " mutual match" : " mutual matches");
+    const n = d.total ?? d.people.length;
+    document.getElementById("count").textContent = n + (n === 1 ? " builder · " : " builders · ") + d.mutual_pairs.length + (d.mutual_pairs.length === 1 ? " mutual match" : " mutual matches");
     document.getElementById("pairs").innerHTML = d.mutual_pairs.map((p) => '<div class="pair">' + esc(p.a) + " ♥ " + esc(p.b) + "</div>").join("");
     document.getElementById("grid").innerHTML = d.people.map((p) =>
       '<div class="p"><div class="lf">' + esc(p.looking_for) + '</div><div class="h">' + esc(p.handle) + '</div><div class="hl">' +

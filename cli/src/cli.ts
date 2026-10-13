@@ -9,6 +9,8 @@ import { buildFingerprint, previewText } from "./fingerprint";
 
 const VERSION = "0.3.0";
 const DEFAULT_URL = "https://slopmatch.lol";
+/** The global pool. Private rooms (e.g. for an event) are opt-in via --room. */
+const DEFAULT_ROOM = "world";
 const DIMS = ["planning", "delegation_size", "verification", "steering", "exploration",
   "verbosity", "curiosity", "warmth", "frustration", "night_owl"];
 
@@ -18,7 +20,7 @@ Local (nothing leaves your machine):
   slopmatch extract [--days 90] [--path DIR] [--redact-terms "Acme,Jane"] [--no-samples] [--quiet]
   slopmatch skills
 
-Server (default https://slopmatch.lol; needs: slopmatch config --room ROOM):
+Server (default https://slopmatch.lol, room "world": everyone, worldwide):
   slopmatch config [--url URL] [--room ROOM]
   slopmatch publish [--card FILE] [--yes]        dry run unless --yes
   slopmatch matches [--mode similar|complement] [--limit 3]
@@ -75,8 +77,7 @@ const { values: v, positionals } = (() => {
 function target() {
   const cfg = loadConfig();
   const url = (v.url || process.env.SLOPMATCH_URL || cfg.url || DEFAULT_URL).replace(/\/+$/, "");
-  const room = v.room || process.env.SLOPMATCH_ROOM || cfg.room || "";
-  if (!room) die("No room set. Run: slopmatch config --room <room>");
+  const room = v.room || process.env.SLOPMATCH_ROOM || cfg.room || DEFAULT_ROOM;
   return { cfg, url, room, key: `${url}|${room}` };
 }
 
