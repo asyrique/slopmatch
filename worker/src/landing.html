@@ -62,19 +62,16 @@
   .sub em { font-style: normal; color: var(--ink); border-bottom: 2px solid var(--accent) }
 
   .installer { max-width: 620px; background: var(--glass); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); border: 1px solid var(--line); border-radius: 18px; padding: 8px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8) }
-  .tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 4px 8px }
-  .tab { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 13px var(--mono); padding: 7px 12px; border-radius: 9px; cursor: pointer; transition: .2s }
-  .tab[aria-selected="true"] { background: rgba(255,255,255,.08); color: var(--ink) }
-  .room-pill { margin-left: auto; display: flex; align-items: center; gap: 6px; font: 13px var(--mono); color: var(--muted) }
-  .room-pill input { width: 140px; background: rgba(0,0,0,.35); border: 1px solid var(--line); color: var(--lime); font: 600 13px var(--mono); border-radius: 8px; padding: 6px 8px; outline: none }
-  .room-pill input:focus { border-color: var(--lime) }
-  .room-pill input.bad { border-color: var(--pink); color: var(--pink) }
   .cmd { display: flex; align-items: center; gap: 10px; background: #07070b; border-radius: 12px; padding: 16px 14px 16px 18px; font: 14.5px/1.5 var(--mono); border: 1px solid rgba(255,255,255,.05) }
   .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; scrollbar-width: none; color: #e9e6f2 }
   .cmd code::-webkit-scrollbar { display: none }
   .cmd .p { color: var(--accent); user-select: none }
   .copy { appearance: none; border: 0; cursor: pointer; flex: none; background: var(--accent); color: #1a0b06; font: 700 13px var(--mono); padding: 9px 14px; border-radius: 9px; transition: transform .15s, background .2s }
   .copy:hover { transform: translateY(-1px) } .copy:active { transform: scale(.96) } .copy.ok { background: var(--lime) }
+  .installer { padding-top: 12px }
+  .installer.ai .cmd .p { display: none }
+  .installer.ai .cmd code { font-family: var(--display); font-size: 16px; white-space: normal }
+  .installer.ai .copy { padding: 12px 18px; font-size: 14px; background: linear-gradient(120deg, var(--accent), var(--pink)) }
   .then { font: 13px var(--mono); color: var(--muted); padding: 12px 10px 6px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center }
   .then kbd { font: 600 13px var(--mono); color: var(--ink); background: rgba(255,255,255,.08); border: 1px solid var(--line); border-bottom-width: 2px; padding: 2px 7px; border-radius: 6px }
   .then a { color: var(--cyan); text-decoration: none } .then a:hover { text-decoration: underline }
@@ -82,8 +79,15 @@
   .hero-row { display:flex; gap:20px; align-items:flex-start }
   .hero-row .installer { flex:1 1 auto; min-width:0 }
   .qrcard { flex:none; width:196px; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center; text-decoration:none; color:var(--muted); font:13px/1.45 var(--mono);
-    background:var(--glass); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border:1px solid var(--line); border-radius:18px; padding:14px; box-shadow:0 30px 80px -30px rgba(0,0,0,.8); transition:transform .3s, border-color .3s }
-  .qrcard:hover { transform:translateY(-3px) rotate(-1deg); border-color:rgba(200,255,77,.4) }
+    backdrop-filter:blur(14px) saturate(170%); -webkit-backdrop-filter:blur(14px) saturate(170%); border:1px solid transparent; border-radius:18px; padding:14px; box-shadow:0 30px 80px -30px rgba(0,0,0,.8); transition:transform .3s, border-color .3s }
+  .qrcard { position:relative; isolation:isolate; background:rgba(18,18,28,.38); transition:transform .25s ease-out, box-shadow .4s; will-change:transform }
+  .qrcard::before { content:""; position:absolute; inset:-1px; border-radius:inherit; padding:1px; z-index:-1; pointer-events:none;
+    background:conic-gradient(from var(--rim,0deg), #ff7a59, #ff4f9a, #8b72ff, #57e3ff, #c8ff4d, #ff7a59);
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:.55; transition:opacity .4s; animation:rim 6s linear infinite }
+  .qrcard:hover { box-shadow:0 30px 80px -30px rgba(0,0,0,.8), 0 0 60px -10px rgba(200,255,77,.45) } .qrcard:hover::before { opacity:1 }
+  .qrcard img { box-shadow:0 0 0 6px rgba(244,241,234,.06) }
+  @property --rim { syntax:"<angle>"; inherits:false; initial-value:0deg }
+  @keyframes rim { to { --rim:360deg } }
   .qrcard img { width:148px; height:148px; border-radius:10px; display:block }
   .qrcard b { color:var(--ink); font-family:var(--display); font-size:15px }
   /* desktop only: phones are already where the QR would send them */
@@ -221,11 +225,6 @@
 
     <div class="hero-row">
     <div class="installer" data-installer>
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" aria-selected="true" data-os="sh">macOS / Linux</button>
-        <button class="tab" role="tab" aria-selected="false" data-os="ps">Windows</button>
-        <button class="tab" role="tab" aria-selected="false" data-os="ai">claude.ai</button>
-      </div>
       <div class="cmd"><span class="p">$</span><code data-cmd></code><button class="copy" data-copy>copy</button></div>
       <div class="then">then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a data-roomlink href="/r/world">see who's in ↗</a></div>
     </div>
@@ -338,11 +337,6 @@
     <div class="kicker reveal">Join the pool</div>
     <h2 class="reveal">Stop slopping alone.</h2>
     <div class="installer reveal" data-installer>
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" aria-selected="true" data-os="sh">macOS / Linux</button>
-        <button class="tab" role="tab" aria-selected="false" data-os="ps">Windows</button>
-        <button class="tab" role="tab" aria-selected="false" data-os="ai">claude.ai</button>
-      </div>
       <div class="cmd"><span class="p">$</span><code data-cmd></code><button class="copy" data-copy>copy</button></div>
       <div class="then">then: <kbd>/slopmatch</kbd> · <a data-roomlink href="/r/world">see who's in ↗</a></div>
     </div>
@@ -363,7 +357,10 @@ const PROMPT = __PROMPT__;
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------------- installer widgets (kept in sync) ---------------- */
-const state = { os: /iPhone|iPad|Android|Mobile/.test(navigator.userAgent) ? "ai" : /Win/.test(navigator.platform) ? "ps" : "sh", room: "world" };
+// One instruction per device: phones get Claude (no shell there), Windows gets PowerShell, everything else gets sh.
+const MOBILE = /iPhone|iPad|iPod|Android|Mobile/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const NATIVE = MOBILE ? "ai" : /Win/.test(navigator.platform) || /Windows/.test(navigator.userAgent) ? "ps" : "sh";
+const state = { os: NATIVE, room: "world" };
 try { const q = new URLSearchParams(location.search).get("room"); if (q && ROOM_RE.test(q.toLowerCase())) state.room = q.toLowerCase(); } catch {}
 function cmdFor() {
   const q = state.room === "world" ? "" : `?room=${state.room}`;
@@ -373,19 +370,19 @@ function cmdFor() {
 }
 function renderInstallers() {
   document.querySelectorAll("[data-installer]").forEach((w) => {
-    w.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.os === state.os)));
     const ai = state.os === "ai";
-    w.querySelector(".cmd .p").textContent = ai ? "1" : "$";
+    w.classList.toggle("ai", ai);
+    w.querySelector(".cmd .p").textContent = ai ? "" : state.os === "ps" ? "PS>" : "$";
     w.querySelector("[data-copy]").textContent = ai ? "open in Claude ↗" : "copy";
     w.querySelector(".then").innerHTML = ai
-      ? 'hit send, then tap the <b>Review and publish</b> link Claude gives you · on the Claude app? <a href="#" data-copyprompt>copy the prompt</a> · <a href="/join">more ways ↗</a>'
-      : `then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a href="/r/${state.room}">see who's in ↗</a>`;
+      ? 'hit send, then tap the <b>Review and publish</b> link Claude gives you · in the Claude app? <a href="#" data-copyprompt>copy the prompt</a>' +
+        (MOBILE ? "" : ' · <a href="#" data-native>back to the terminal</a>')
+      : `then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a href="/install.${state.os === "ps" ? "ps1" : "sh"}" target="_blank">read the script first</a> · <a href="#" data-useai>use claude.ai instead</a>`;
     w.querySelector("[data-cmd]").textContent = ai ? "Claude writes your card from its memory of you" : cmdFor();
   });
   document.getElementById("navroom").href = "/r/" + state.room;
 }
 document.querySelectorAll("[data-installer]").forEach((w) => {
-  w.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { state.os = t.dataset.os; renderInstallers(); }));
   const btn = w.querySelector("[data-copy]");
   btn.addEventListener("click", async () => {
     if (state.os === "ai") { window.open("https://claude.ai/new?q=" + encodeURIComponent(PROMPT), "_blank", "noopener"); return; }
@@ -398,6 +395,8 @@ document.querySelectorAll("[data-installer]").forEach((w) => {
 });
 renderInstallers();
 document.addEventListener("click", async (e) => {
+  const sw = e.target.closest("[data-useai],[data-native]");
+  if (sw) { e.preventDefault(); state.os = sw.hasAttribute("data-useai") ? "ai" : NATIVE; renderInstallers(); return; }
   const a = e.target.closest("[data-copyprompt]"); if (!a) return;
   e.preventDefault();
   try { await navigator.clipboard.writeText(PROMPT); a.textContent = "copied ✓ now paste it into a new chat"; } catch { location.href = "/prompt"; }
@@ -521,12 +520,13 @@ document.querySelectorAll(".rbtn").forEach((b) => b.addEventListener("click", ()
   const fs = `
 precision highp float;
 uniform vec2 uRes; uniform float uT; uniform vec2 uM; uniform float uS; uniform float uMob;
-#define NB 7
+uniform vec3 uQ; uniform float uQH; // QR card: screen uv + presence, hover
+#define NB 8
 vec3 bp[NB]; float br[NB]; vec3 bc[NB];
 float smin(float a, float b, float k, out float h){ h = clamp(.5 + .5*(b-a)/k, 0., 1.); return mix(b, a, h) - k*h*(1.-h); }
 vec3 pal(float t){ return .5 + .5*cos(6.2831*(vec3(.0,.33,.67) + t)); }
-void setup(){
-  float t = uT*.35;
+void setup(vec3 qp){
+  float t = uT*.35; float pres = uQ.z;
   vec2 c = mix(vec2(1.75, .05), vec2(.25, .7), uMob);
   // three pairs that orbit, drift together, merge (a match) and split again
   for (int i = 0; i < 3; i++){
@@ -535,6 +535,8 @@ void setup(){
     vec3 ctr = vec3(c.x + cos(ang)*.85, c.y + sin(ang*1.3)*.8, sin(ang)*.7 - .3);
     float sep = .55 + .45*sin(t*.9 + fi*1.7);
     vec3 dir = normalize(vec3(cos(t*.7+fi), sin(t*.6+fi*2.), .4*sin(t+fi)));
+    // the lime pair leaves the cluster to live behind the QR card, merging into one glowing blob
+    if (i == 2) { ctr = mix(ctr, qp + vec3(.06*sin(t*1.3), .05*cos(t*1.1), 0.), pres); sep *= mix(1., .28 + .12*uQH, pres); }
     bp[i*2] = ctr + dir*sep; bp[i*2+1] = ctr - dir*sep;
     br[i*2] = .38 + .05*sin(t*2.+fi); br[i*2+1] = .32 + .05*cos(t*1.7+fi);
   }
@@ -543,6 +545,13 @@ void setup(){
   bc[4] = vec3(.78,1.,.3);  bc[5] = vec3(1.,.8,.3);
   // "you": follows the pointer
   bp[6] = vec3(uM.x*2.6*(uRes.x/uRes.y), uM.y*2.6, .6); br[6] = .26; bc[6] = vec3(1.);
+  // hovering the card swells the blob behind it
+  float sw = 1. + .32*uQH*pres; br[4] *= sw; br[5] *= sw;
+  // a droplet that keeps shuttling between the cluster and the card, so they read as connected
+  float k = .5 + .5*sin(t*1.6);
+  vec3 home = vec3(c.x - .2, c.y - .25, -.3);
+  bp[7] = mix(home, qp, k) + vec3(0., .35*sin(3.1416*k), .2*cos(t));
+  br[7] = (.07 + .1*sin(3.1416*k)) * pres; bc[7] = vec3(.78,1.,.3);
 }
 float map(vec3 p, out vec3 col){
   float d = 1e5; col = vec3(0.); float h;
@@ -559,11 +568,14 @@ vec3 nrm(vec3 p){ vec3 c; vec2 e = vec2(.002,0.);
   return normalize(vec3(map(p+e.xyy,c)-map(p-e.xyy,c), map(p+e.yxy,c)-map(p-e.yxy,c), map(p+e.yyx,c)-map(p-e.yyx,c))); }
 void main(){
   vec2 uv = (gl_FragCoord.xy - .5*uRes) / uRes.y;
-  setup();
   float ca = uS*.6;
   vec3 ro = vec3(sin(ca)*.6, -uS*.35, 5.); vec3 ta = vec3(mix(.35,0.,uMob), mix(0.,.2,uMob) - uS*.35, 0.);
   vec3 f = normalize(ta-ro), r = normalize(cross(f, vec3(0,1,0))), u = cross(r, f);
   vec3 rd = normalize(uv.x*r + uv.y*u + 1.6*f);
+  // where the QR card sits in the world: cast its screen point onto a plane just behind the glass
+  vec3 qd = normalize(uQ.x*r + uQ.y*u + 1.6*f);
+  vec3 qp = ro + qd * ((-.4 - ro.z) / qd.z);
+  setup(qp);
   // background: deep gradient + soft glow
   vec3 bg = mix(vec3(.0012,.0012,.0025), vec3(.004,.002,.007), uv.y+.5);
   bg += vec3(1.,.35,.25)*.012*exp(-2.5*length(uv-vec2(mix(.75,.1,uMob),.05)));
@@ -600,7 +612,18 @@ void main(){
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const U = (n) => gl.getUniformLocation(prog, n);
-  const uRes = U("uRes"), uT = U("uT"), uM = U("uM"), uS = U("uS"), uMob = U("uMob");
+  const uRes = U("uRes"), uT = U("uT"), uM = U("uM"), uS = U("uS"), uMob = U("uMob"), uQ = U("uQ"), uQH = U("uQH");
+  // the QR card is part of the scene: track where it is on screen and whether it's hovered
+  const qcard = document.querySelector(".qrcard");
+  const q = { x: 0, y: 0, pres: 0, hover: 0, hot: false };
+  if (qcard) {
+    qcard.addEventListener("pointerenter", () => (q.hot = true));
+    qcard.addEventListener("pointerleave", () => { q.hot = false; qcard.style.transform = ""; });
+    qcard.addEventListener("pointermove", (e) => {
+      const b = qcard.getBoundingClientRect(), x = (e.clientX - b.left) / b.width - .5, y = (e.clientY - b.top) / b.height - .5;
+      qcard.style.transform = `perspective(700px) rotateY(${x * 22}deg) rotateX(${-y * 22}deg) translateZ(14px)`;
+    });
+  }
 
   // adaptive resolution: start modest, back off if frames are slow
   let scale = Math.min(window.devicePixelRatio || 1, 1.5) * (innerWidth < 700 ? .55 : .7);
@@ -624,6 +647,12 @@ void main(){
     if (dt > 34) { if (++slow > 20 && scale > .3) { scale *= .8; resize(); slow = 0; } } else slow = Math.max(0, slow - 1);
     if (now - mouse.lastMove > 3000 || !mouse.lastMove) { idleT += dt * .0004; mouse.tx = .28 + Math.cos(idleT) * .12; mouse.ty = -.1 + Math.sin(idleT * 1.3) * .15; }
     mouse.x += (mouse.tx - mouse.x) * .06; mouse.y += (mouse.ty - mouse.y) * .06; scroll += (sTarget - scroll) * .08;
+    if (qcard) {
+      const b = qcard.getBoundingClientRect(), on = b.width > 0 && b.bottom > 0 && b.top < innerHeight;
+      if (on) { q.x = (b.left + b.width / 2 - innerWidth / 2) / innerHeight; q.y = (innerHeight / 2 - (b.top + b.height * .4)) / innerHeight; }
+      q.pres += ((on ? 1 : 0) - q.pres) * .03; q.hover += ((q.hot ? 1 : 0) - q.hover) * .1;
+      gl.uniform3f(uQ, q.x, q.y, q.pres); gl.uniform1f(uQH, q.hover);
+    }
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uT, reduce ? 8 : (now - t0) / 1000);
     gl.uniform2f(uM, mouse.x, mouse.y);

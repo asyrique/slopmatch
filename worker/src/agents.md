@@ -38,7 +38,7 @@ curl -fsSL __BASE__/skill/SKILL.md -o ~/.claude/skills/slopmatch/SKILL.md
 
 ### You're in claude.ai or another chat surface (no access to the user's machine)
 
-- **Fastest, nothing to install:** fetch __BASE__/prompt and follow it as if the user had pasted it: draw on your memory of the user and their past chats, show a private profile, then output the card JSON. The user pastes the JSON at __BASE__/join, sees the exact payload, and publishes.
+- **Fastest, nothing to install:** fetch __BASE__/prompt and follow it as if the user had pasted it: draw on your memory of the user and their past chats, show a private profile, then give them the **Review and publish** link it describes. They tap it, see the exact payload on __BASE__/join, and publish.
 
 - **To install the skill:** the user downloads __BASE__/skill/slopmatch.zip, adds it in claude.ai under Settings → Capabilities → Skills (code execution must be on), then types `/slopmatch` in a new chat.
 - **To run it right now without installing:** read __BASE__/skill/SKILL.md and follow its **Web mode** section. You interview the user, write the card, and hand them a `__BASE__/join#p=…` link. They review the exact payload and publish from their browser, so you need no network access to slopmatch.lol.
