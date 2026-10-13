@@ -343,7 +343,7 @@
   <section class="handles">
     <div class="kicker reveal">Identity</div>
     <h2 class="reveal">You'll be known as…</h2>
-    <p class="lede reveal">Every builder gets a Southeast Asian slang adjective plus a Southeast Asian animal. That's 576 ways to be pseudonymous.</p>
+    <p class="lede reveal">Every builder gets a Southeast Asian slang word (or a plain English one) plus a Southeast Asian animal. That's 1,152 ways to be pseudonymous.</p>
     <div class="slot reveal" aria-live="polite"><div class="reel a"><div class="strip" id="reelA"></div></div><span class="dash">-</span><div class="reel b"><div class="strip" id="reelB"></div></div></div>
     <div class="reveal"><button class="spin" id="spin">pull the lever 🎰</button><div class="combo" id="gloss">&nbsp;</div></div>
   </section>
@@ -652,7 +652,7 @@ function spin() {
     s.parentElement.style.width = Math.max(...[...s.children].slice(-1).map((c) => c.textContent.length)) * .56 + "em";
     s.offsetHeight; s.style.transition = `transform ${1.3 + delay / 1000}s cubic-bezier(.15,.9,.25,1.06)`; s.style.transform = `translateY(-${(N - 1) * 1.15}em)`;
   });
-  setTimeout(() => { spinning = false; document.getElementById("gloss").textContent = `“${GLOSS[a] || a}” ${b}`; }, 1650);
+  setTimeout(() => { spinning = false; document.getElementById("gloss").textContent = GLOSS[a] ? `“${GLOSS[a]}” ${b}` : "plain English, for once"; }, 1650);
 }
 document.getElementById("spin").addEventListener("click", spin);
 fill(reelA, WORDS.adj, "kiasu"); fill(reelB, WORDS.animal, "kancil");

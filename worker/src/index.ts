@@ -43,11 +43,13 @@ interface ProfileRow {
 const ROOM_RE = /^[a-z0-9][a-z0-9-]{2,31}$/;
 /** Everyone lands here unless they opt into a private room (e.g. for an event). */
 const DEFAULT_ROOM = "world";
-// Pseudonyms: Southeast Asian slang adjective + Southeast Asian animal, e.g. "kiasu-kancil", "bojio-sunbear".
+// Pseudonyms: Southeast Asian slang or English adjective + Southeast Asian animal, e.g. "kiasu-kancil", "feral-sunbear".
 const ADJ = [
   "kiasu", "kiasi", "bojio", "shiok", "paiseh", "sian", "kancheong", "cincai", "kaypoh", "atas", "lansi", "jialat", // SG/MY
   "suay", "garang", "comel", "rajin", "malas", "manja", "santai", "mager",                                         // MY/ID
   "sabai", "sanuk", "kilig", "gigil",                                                                              // TH/PH
+  "sloppy", "feral", "cursed", "caffeinated", "sleepy", "chaotic", "sneaky", "cosmic", "spicy", "grumpy", "cheeky", "wobbly",
+  "sassy", "zesty", "crunchy", "soggy", "turbo", "scrappy", "unhinged", "vibey", "shiny", "dramatic", "nocturnal", "gremlin", // English
 ];
 const ANIMAL = [
   "sunbear", "orangutan", "kancil", "pangolin", "tarsier", "hornbill", "dugong", "binturong", "macaque", "tapir",

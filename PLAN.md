@@ -30,7 +30,7 @@ fixtures/make_fixtures.py   Generates fake transcripts (incl. planted secrets) i
 
 **Scoring:** 65% dimension fit + 25% topic Jaccard + 10% file-type Jaccard. Dimension fit is `1 − |diff|` per dimension. In `complement` mode, `planning`, `exploration`, `delegation_size` and `steering` use `|diff|` instead.
 
-**Handles:** SEA slang adjective + SEA animal (24 × 24 = 576 combinations, e.g. `kiasu-kancil`, `bojio-sunbear`). After 4 collisions a number is appended. The lists are at the top of `worker/src/index.ts`.
+**Handles:** SEA slang or English adjective + SEA animal (48 × 24 = 1,152 combinations, e.g. `kiasu-kancil`, `feral-sunbear`). After 4 collisions a number is appended. The lists are at the top of `worker/src/index.ts`.
 
 **Auth:** on first publish the server creates a 32-byte random token. D1 stores only its sha256. The client keeps the token in `~/.slopmatch/config.json` (chmod 600), keyed by `url|room`.
 
