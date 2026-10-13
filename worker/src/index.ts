@@ -380,6 +380,7 @@ import PLUGIN_SKILL_MD from "../../plugin/skills/me/SKILL.md";
 import AGENTS_MD from "./agents.md";
 import LANDING_HTML from "./landing.html";
 import JOIN_HTML from "./join.html";
+import ROOM_HTML from "./room.html";
 import PROMPT_MD from "./prompt.md";
 import qrcode from "qrcode-generator";
 
@@ -565,7 +566,7 @@ export default {
       let m = p.match(/^\/api\/room\/([^/]+)$/);
       if (m && req.method === "GET") return await cachedRoomData(decodeURIComponent(m[1]), url, env, ctx);
       m = p.match(/^\/r\/([^/]+)$/);
-      if (m && req.method === "GET") return new Response(ROOM_PAGE, { headers: { "content-type": "text/html; charset=utf-8" } });
+      if (m && req.method === "GET") return new Response(ROOM_HTML, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60" } });
       m = p.match(/^\/dl\/([^/]+)$/);
       if (m && (req.method === "GET" || req.method === "HEAD")) return await download(m[1], req, env);
       if (p === "/install.sh" || p === "/install.ps1") return installer(p, url);
@@ -604,49 +605,3 @@ export default {
     }
   },
 } satisfies ExportedHandler<Env>;
-
-// ---------------------------------------------------------------- projector page
-const ROOM_PAGE = /* html */ `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>slopmatch room</title>
-<style>
-  :root { --bg:#0e0f12; --card:#181a20; --ink:#f2efe9; --muted:#8b8f99; --accent:#ff7a59; --line:#2a2d36; }
-  * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--ink);
-    font:16px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; padding:32px 16px; }
-  header { max-width:1200px; margin:0 auto 24px; display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap }
-  h1 { margin:0; font-size:clamp(28px,5vw,48px); letter-spacing:-.02em } h1 span { color:var(--accent) }
-  .count { color:var(--muted); font-size:18px }
-  .qr { display:flex; align-items:center; gap:14px; text-decoration:none; color:var(--muted); font-size:15px; line-height:1.3 }
-  .qr img { width:clamp(132px, 14vw, 220px); height:auto; aspect-ratio:1; border-radius:12px; display:block }
-  .qr b { color:var(--ink) }
-  @media (max-width: 700px), (hover: none) { .qr { display:none } }
-  .pairs { max-width:1200px; margin:0 auto 24px; display:flex; flex-wrap:wrap; gap:10px }
-  .pair { background:var(--accent); color:#1a0d08; font-weight:700; padding:8px 14px; border-radius:999px }
-  .grid { max-width:1200px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px }
-  .p { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; animation:in .4s ease }
-  .h { font-weight:700; font-size:18px } .hl { color:var(--muted); margin:6px 0 10px }
-  .t { display:inline-block; font-size:12px; border:1px solid var(--line); border-radius:999px; padding:2px 8px; margin:0 4px 4px 0; color:var(--muted) }
-  .lf { font-size:12px; color:var(--accent); text-transform:uppercase; letter-spacing:.06em }
-  @keyframes in { from { opacity:0; transform:translateY(6px) } }
-</style></head><body>
-<header><h1>slop<span>match</span> · <span id="room"></span></h1><div class="count" id="count"></div><a class="qr" href="/join"><img src="/qr.svg" alt="QR code to join slopmatch"><span>scan to join<br><b>slopmatch.lol/join</b></span></a></header>
-<div class="pairs" id="pairs"></div>
-<div class="grid" id="grid"></div>
-<script>
-const room = decodeURIComponent(location.pathname.split("/").pop());
-document.getElementById("room").textContent = room;
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-async function tick() {
-  try {
-    const r = await fetch("/api/room/" + encodeURIComponent(room)); if (!r.ok) return;
-    const d = await r.json();
-    const n = d.total ?? d.people.length;
-    document.getElementById("count").textContent = n + (n === 1 ? " builder · " : " builders · ") + d.mutual_pairs.length + (d.mutual_pairs.length === 1 ? " mutual match" : " mutual matches");
-    document.getElementById("pairs").innerHTML = d.mutual_pairs.map((p) => '<div class="pair">' + esc(p.a) + " ♥ " + esc(p.b) + "</div>").join("");
-    document.getElementById("grid").innerHTML = d.people.map((p) =>
-      '<div class="p"><div class="lf">' + esc(p.looking_for) + '</div><div class="h">' + esc(p.handle) + '</div><div class="hl">' +
-      esc(p.headline) + "</div>" + p.topics.map((t) => '<span class="t">' + esc(t) + "</span>").join("") + "</div>").join("");
-  } catch (e) {}
-}
-tick(); setInterval(tick, 6000);
-</script></body></html>`;

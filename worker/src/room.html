@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>slopmatch · world</title>
+<meta name="theme-color" content="#07070b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='30%25'%3E%3Cstop offset='0' stop-color='%23fff6c9'/%3E%3Cstop offset='.45' stop-color='%23ff7a59'/%3E%3Cstop offset='1' stop-color='%23ff3d8b'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M14 34c-6-14 6-26 18-24 9 1 12 8 18 9 9 2 10 16 2 22-7 6-12 3-20 7-9 5-14-4-18-14z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#07070b; --ink:#f4f1ea; --muted:#9a98a6; --dim:#5d5b69; --line:rgba(255,255,255,.09);
+    --accent:#ff7a59; --pink:#ff4f9a; --lime:#c8ff4d; --cyan:#57e3ff; --glass:rgba(14,14,22,.6);
+    --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace; }
+  * { box-sizing:border-box }
+  html, body { height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--ink); font:16px/1.45 var(--display); -webkit-font-smoothing:antialiased }
+  #sky { position:fixed; inset:0; width:100vw; height:100vh; display:block; cursor:crosshair }
+  .aurora { position:fixed; inset:-20%; pointer-events:none; filter:blur(60px); opacity:.55; background:
+    radial-gradient(30vmax 30vmax at 15% 20%, rgba(255,122,89,.18), transparent 60%),
+    radial-gradient(28vmax 28vmax at 85% 30%, rgba(87,227,255,.12), transparent 60%),
+    radial-gradient(34vmax 34vmax at 50% 95%, rgba(255,79,154,.14), transparent 60%);
+    animation:drift 26s ease-in-out infinite alternate }
+  @keyframes drift { to { transform:translate(4%, -3%) rotate(6deg) scale(1.08) } }
+  .ui { position:fixed; z-index:2; pointer-events:none } .ui * { pointer-events:auto }
+
+  header { top:28px; left:32px; right:32px; display:flex; justify-content:space-between; align-items:flex-start; gap:24px }
+  .brand { font-weight:800; font-size:clamp(34px,4.6vw,64px); letter-spacing:-.05em; line-height:.9; text-decoration:none; color:inherit }
+  .brand b { color:var(--accent) } .brand i { font-style:normal; background:linear-gradient(100deg,var(--accent),var(--pink) 50%,var(--lime)); -webkit-background-clip:text; background-clip:text; color:transparent }
+  .live { margin-top:12px; font:600 12px var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--lime); display:flex; align-items:center; gap:10px }
+  .live::before { content:""; width:9px; height:9px; border-radius:50%; background:var(--lime); box-shadow:0 0 0 0 rgba(200,255,77,.6); animation:ping 1.8s infinite }
+  @keyframes ping { 70% { box-shadow:0 0 0 12px rgba(200,255,77,0) } 100% { box-shadow:0 0 0 0 rgba(200,255,77,0) } }
+  .stats { display:flex; gap:clamp(18px,3vw,44px); align-items:flex-start }
+  .stat b { display:block; font:800 clamp(40px,5.4vw,84px)/.9 var(--display); letter-spacing:-.05em; font-variant-numeric:tabular-nums }
+  .stat span { font:12px var(--mono); color:var(--muted); letter-spacing:.12em; text-transform:uppercase }
+  .stat.h b { color:var(--pink); text-shadow:0 0 40px rgba(255,79,154,.5) }
+  .qr { display:flex; gap:14px; align-items:center; text-decoration:none; color:var(--muted); font:13px/1.35 var(--mono); background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--line); border-radius:18px; padding:12px }
+  .qr img { width:clamp(110px,10vw,170px); height:auto; aspect-ratio:1; border-radius:10px; display:block }
+  .qr b { color:var(--ink); font-family:var(--display); font-size:17px; display:block; margin-bottom:2px }
+
+  aside { right:32px; bottom:28px; width:min(380px, 32vw); max-height:calc(100vh - 260px); display:flex; flex-direction:column; gap:12px }
+  .panel { background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--line); border-radius:18px; padding:14px 16px; overflow:hidden }
+  .panel h3 { margin:0 0 10px; font:600 11px var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between }
+  .feed { display:flex; flex-direction:column; gap:8px; max-height:34vh; overflow:hidden; mask-image:linear-gradient(#000 75%, transparent); -webkit-mask-image:linear-gradient(#000 75%, transparent) }
+  .row { display:grid; grid-template-columns:10px 1fr; gap:10px; align-items:baseline; animation:slide .6s cubic-bezier(.3,1.3,.4,1) both }
+  @keyframes slide { from { opacity:0; transform:translateX(30px) } }
+  .row i { width:10px; height:10px; border-radius:50%; background:var(--c); box-shadow:0 0 12px var(--c); transform:translateY(1px) }
+  .row b { font-size:15px; letter-spacing:-.01em } .row span { display:block; color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .pairs { display:flex; flex-direction:column; gap:7px }
+  .pair { font:600 14px var(--display); display:flex; align-items:center; gap:8px; animation:slide .6s cubic-bezier(.3,1.3,.4,1) both }
+  .pair em { font-style:normal; color:var(--pink); text-shadow:0 0 14px rgba(255,79,154,.8) }
+  .none { color:var(--dim); font:13px var(--mono) }
+
+  .legend { left:32px; bottom:28px; display:flex; gap:8px; flex-wrap:wrap; max-width:52vw }
+  .legend span { font:12px var(--mono); color:var(--muted); background:var(--glass); border:1px solid var(--line); border-radius:99px; padding:6px 12px; display:flex; align-items:center; gap:8px; backdrop-filter:blur(10px) }
+  .legend span::before { content:""; width:9px; height:9px; border-radius:50%; background:var(--c); box-shadow:0 0 10px var(--c) }
+
+  .toast { position:fixed; z-index:3; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9); opacity:0; pointer-events:none; text-align:center; transition:opacity .4s, transform .6s cubic-bezier(.3,1.5,.4,1) }
+  .toast.on { opacity:1; transform:translate(-50%,-50%) scale(1) }
+  .toast::before { content:""; position:absolute; inset:-60px -90px; z-index:-1; border-radius:50%; background:radial-gradient(closest-side, rgba(7,7,11,.88), rgba(7,7,11,0)) }
+  .toast .k { font:600 12px var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--lime) }
+  .toast .h { font:800 clamp(36px,6vw,88px)/1 var(--display); letter-spacing:-.05em; text-shadow:0 0 60px rgba(255,122,89,.5) }
+  .toast .s { color:#d8d4e0; font-size:clamp(16px,1.8vw,22px); margin-top:8px; max-width:40ch }
+  .toast.love .h { color:var(--pink); text-shadow:0 0 80px rgba(255,79,154,.8) }
+
+  .tip { position:fixed; z-index:4; pointer-events:none; background:rgba(10,10,16,.92); border:1px solid var(--line); border-radius:14px; padding:12px 14px; max-width:300px; opacity:0; transition:opacity .15s }
+  .tip.on { opacity:1 }
+  .tip .lf { font:600 10px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--c) }
+  .tip .h { font-weight:800; font-size:18px; letter-spacing:-.02em } .tip .hl { color:#d8d4e0; font-size:14px; margin:2px 0 8px }
+  .tip .t { display:inline-block; font:11px var(--mono); color:var(--muted); border:1px solid var(--line); border-radius:99px; padding:1px 8px; margin:0 4px 4px 0 }
+
+  .empty { position:fixed; z-index:2; inset:0; display:none; place-items:center; text-align:center; pointer-events:none }
+  .empty.on { display:grid }
+  .empty h2 { font:800 clamp(40px,6vw,90px)/.95 var(--display); letter-spacing:-.05em; margin:0 0 14px }
+  .empty p { color:var(--muted); font:15px var(--mono); margin:0 }
+
+  @media (max-width: 900px) {
+    html, body { overflow:auto } #sky { position:fixed }
+    header { position:relative; top:auto; left:auto; right:auto; padding:20px 16px 0; flex-wrap:wrap }
+    .qr { display:none }
+    aside { position:relative; right:auto; bottom:auto; width:auto; max-height:none; margin:46vh 16px 20px }
+    .legend { position:relative; left:auto; bottom:auto; max-width:none; padding:0 16px 24px }
+    .ui { position:relative }
+  }
+  @media (prefers-reduced-motion: reduce) { .aurora { animation:none } }
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<canvas id="sky" aria-label="Every builder in the pool, drifting. Mutual matches are joined by a line."></canvas>
+
+<header class="ui">
+  <div>
+    <a class="brand" href="/">slop<b>match</b> <i>· world</i></a>
+    <div class="live" id="liveLine">live · everyone, everywhere</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="nPeople">0</b><span>builders</span></div>
+    <div class="stat h"><b id="nPairs">0</b><span>♥ matches</span></div>
+    <a class="qr" href="/join"><img src="/qr.svg" alt="QR code to join slopmatch"><span><b>scan to join</b>slopmatch.lol/join<br>Claude writes your card</span></a>
+  </div>
+</header>
+
+<aside class="ui">
+  <div class="panel"><h3><span>just landed</span><span id="feedN"></span></h3><div class="feed" id="feed"></div></div>
+  <div class="panel"><h3><span>♥ mutual matches</span></h3><div class="pairs" id="pairs"><div class="none">nobody yet. reveal someone 👀</div></div></div>
+</aside>
+
+<div class="legend ui" id="legend"></div>
+<div class="empty" id="empty"><div><h2>the pool is empty.</h2><p>be the first: scan the code, or open slopmatch.lol</p></div></div>
+<div class="toast" id="toast"><div class="k" id="tK"></div><div class="h" id="tH"></div><div class="s" id="tS"></div></div>
+<div class="tip" id="tip"></div>
+
+<script>
+const room = decodeURIComponent(location.pathname.split("/").pop() || "world");
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const LF = { cofounder: "#ff7a59", teammate: "#57e3ff", pairing: "#c8ff4d", "just curious": "#ff4f9a" };
+const colorOf = (lf) => LF[lf] || "#b79cff";
+document.getElementById("legend").innerHTML = Object.entries(LF).map(([k, c]) => `<span style="--c:${c}">${k}</span>`).join("");
+if (room !== "world") document.querySelector(".brand i").textContent = "· " + room;
+
+/* ---------------- simulation ---------------- */
+const cv = document.getElementById("sky"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
+resize(); addEventListener("resize", resize);
+
+const nodes = new Map(); // handle -> node
+let pairs = [], ripples = [], first = true, seenPairs = new Set();
+// the play area avoids the header and sidebar on desktop
+const area = () => innerWidth > 900 ? { x0: 90, y0: 190, x1: W - Math.min(380, W * .32) - 110, y1: H - 100 } : { x0: 60, y0: 170, x1: W - 60, y1: H * .44 };
+function addNode(p, delay) {
+  const a = area(), r = 7 + Math.random() * 5;
+  nodes.set(p.handle, {
+    ...p, r, c: colorOf(p.looking_for),
+    x: a.x0 + Math.random() * (a.x1 - a.x0), y: a.y0 + Math.random() * (a.y1 - a.y0),
+    vx: (Math.random() - .5) * .4, vy: (Math.random() - .5) * .4, born: performance.now() + delay, ph: Math.random() * 6.28,
+  });
+}
+function step(now) {
+  const a = area(), list = [...nodes.values()], n = list.length;
+  const cx = (a.x0 + a.x1) / 2, cy = (a.y0 + a.y1) / 2;
+  const space = Math.sqrt(((a.x1 - a.x0) * (a.y1 - a.y0)) / Math.max(1, n)) * .9; // personal space shrinks as the pool grows
+  for (let i = 0; i < n; i++) {
+    const p = list[i];
+    p.vx += (cx - p.x) * 0.00002; p.vy += (cy - p.y) * 0.00002;
+    p.vx += Math.cos(now / 2400 + p.ph) * .006; p.vy += Math.sin(now / 2900 + p.ph * 1.3) * .006;
+    for (let j = i + 1; j < n; j++) {
+      const q = list[j], dx = q.x - p.x, dy = q.y - p.y, d2 = dx * dx + dy * dy + .01;
+      if (d2 < space * space) { const d = Math.sqrt(d2), f = (space - d) / space * .06; p.vx -= dx / d * f; p.vy -= dy / d * f; q.vx += dx / d * f; q.vy += dy / d * f; }
+    }
+  }
+  for (const pr of pairs) { // mutual matches drift together
+    const p = nodes.get(pr.a), q = nodes.get(pr.b); if (!p || !q) continue;
+    const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || 1, f = (d - 90) * .0016;
+    p.vx += dx / d * f; p.vy += dy / d * f; q.vx -= dx / d * f; q.vy -= dy / d * f;
+  }
+  for (const p of list) {
+    p.vx *= .985; p.vy *= .985; const sp = Math.hypot(p.vx, p.vy); if (sp > .9) { p.vx *= .9 / sp; p.vy *= .9 / sp; }
+    p.x += p.vx * (reduce ? .3 : 1); p.y += p.vy * (reduce ? .3 : 1);
+    if (p.x < a.x0) p.vx += .05; if (p.x > a.x1) p.vx -= .05; if (p.y < a.y0) p.vy += .05; if (p.y > a.y1) p.vy -= .05;
+  }
+}
+let hover = null;
+function draw(now) {
+  ctx.clearRect(0, 0, W, H);
+  // faint links between people who share a topic: the pool as a network
+  const list = [...nodes.values()];
+  ctx.lineWidth = 1;
+  for (let i = 0; i < list.length && list.length < 160; i++) for (let j = i + 1; j < list.length; j++) {
+    const p = list[i], q = list[j], d = Math.hypot(q.x - p.x, q.y - p.y);
+    if (d < 170 && p.topics.some((t) => q.topics.includes(t))) { ctx.strokeStyle = `rgba(255,255,255,${.07 * (1 - d / 170)})`; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); }
+  }
+  // mutual matches: glowing line + beating heart
+  for (const pr of pairs) {
+    const p = nodes.get(pr.a), q = nodes.get(pr.b); if (!p || !q) continue;
+    const g = ctx.createLinearGradient(p.x, p.y, q.x, q.y); g.addColorStop(0, p.c); g.addColorStop(1, q.c);
+    ctx.save(); ctx.shadowColor = "#ff4f9a"; ctx.shadowBlur = 18; ctx.strokeStyle = g; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); ctx.restore();
+    const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2, beat = 1 + .25 * Math.max(0, Math.sin(now / 260)) ** 8;
+    ctx.save(); ctx.translate(mx, my); ctx.scale(beat, beat); ctx.font = "24px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowColor = "#ff4f9a"; ctx.shadowBlur = 24; ctx.fillText("💖", 0, 0); ctx.restore();
+  }
+  // ripples for new arrivals
+  ripples = ripples.filter((r) => now - r.t < 1800);
+  for (const r of ripples) { const k = (now - r.t) / 1800; ctx.strokeStyle = r.c; ctx.globalAlpha = 1 - k; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(r.x, r.y, 10 + k * 120, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
+  // the orbs
+  const labels = list.length <= 70;
+  for (const p of list) {
+    const age = now - p.born; if (age < 0) continue;
+    const s = Math.min(1, age / 700), pop = s < 1 ? 1 + Math.sin(s * Math.PI) * .6 : 1, r = p.r * pop * (hover === p ? 1.5 : 1);
+    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 4.5); glow.addColorStop(0, p.c + "66"); glow.addColorStop(1, p.c + "00");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(p.x, p.y, r * 4.5, 0, 6.283); ctx.fill();
+    const body = ctx.createRadialGradient(p.x - r * .35, p.y - r * .4, r * .1, p.x, p.y, r); body.addColorStop(0, "#fffbe8"); body.addColorStop(.35, p.c); body.addColorStop(1, p.c + "aa");
+    ctx.fillStyle = body; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 6.283); ctx.fill();
+    if (labels || hover === p) { ctx.font = "600 12px 'JetBrains Mono', monospace"; ctx.textAlign = "center"; ctx.fillStyle = `rgba(244,241,234,${hover === p ? 1 : .62 * s})`; ctx.fillText(p.handle, p.x, p.y + r + 16); }
+  }
+}
+(function loop(now) { step(now); draw(now); requestAnimationFrame(loop); })(performance.now());
+
+/* ---------------- hover / tap for a card ---------------- */
+const tip = document.getElementById("tip"), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function pickAt(x, y) { let best = null, bd = 28; for (const p of nodes.values()) { const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = p; } } return best; }
+function showTip(e) {
+  hover = pickAt(e.clientX, e.clientY);
+  if (!hover) { tip.classList.remove("on"); return; }
+  tip.style.setProperty("--c", hover.c);
+  tip.innerHTML = `<div class="lf">${esc(hover.looking_for)}</div><div class="h">${esc(hover.handle)}</div><div class="hl">${esc(hover.headline)}</div>${hover.topics.map((t) => `<span class="t">${esc(t)}</span>`).join("")}`;
+  tip.style.left = Math.min(e.clientX + 18, innerWidth - 320) + "px"; tip.style.top = Math.min(e.clientY + 18, innerHeight - 160) + "px"; tip.classList.add("on");
+}
+cv.addEventListener("pointermove", showTip); cv.addEventListener("pointerdown", showTip);
+cv.addEventListener("pointerleave", () => { hover = null; tip.classList.remove("on"); });
+
+/* ---------------- arrivals & matches as events ---------------- */
+const toastQ = []; let toasting = false;
+function toast(k, h, s, love) { toastQ.push({ k, h, s, love }); if (!toasting) nextToast(); }
+function nextToast() {
+  const t = toastQ.shift(); if (!t) { toasting = false; return; } toasting = true;
+  const el = document.getElementById("toast"); el.classList.toggle("love", !!t.love);
+  document.getElementById("tK").textContent = t.k; document.getElementById("tH").textContent = t.h; document.getElementById("tS").textContent = t.s;
+  el.classList.add("on"); setTimeout(() => { el.classList.remove("on"); setTimeout(nextToast, 500); }, 3200);
+}
+function countUp(el, to) {
+  const from = +el.dataset.v || 0; el.dataset.v = to; if (from === to) return; const t0 = performance.now();
+  (function f(t) { const k = Math.min(1, (t - t0) / 900); el.textContent = Math.round(from + (to - from) * (1 - (1 - k) ** 3)).toLocaleString(); if (k < 1) requestAnimationFrame(f); })(t0);
+}
+const feed = document.getElementById("feed");
+function feedRow(p) { return `<div class="row" style="--c:${colorOf(p.looking_for)}"><i></i><div><b>${esc(p.handle)}</b><span>${esc(p.headline)}</span></div></div>`; }
+
+async function tick() {
+  try {
+    const r = await fetch("/api/room/" + encodeURIComponent(room)); if (!r.ok) return;
+    const d = await r.json(), total = d.total ?? d.people.length;
+    countUp(document.getElementById("nPeople"), total); countUp(document.getElementById("nPairs"), d.mutual_pairs.length);
+    document.getElementById("empty").classList.toggle("on", total === 0);
+    const live = new Set(d.people.map((p) => p.handle));
+    for (const h of [...nodes.keys()]) if (!live.has(h)) nodes.delete(h); // deleted profiles drift away
+    const fresh = d.people.filter((p) => !nodes.has(p.handle));
+    // first load: everyone pops in, staggered; later: each newcomer gets a ripple and a toast
+    fresh.slice().reverse().forEach((p, i) => {
+      addNode(p, first ? Math.min(i * 60, 2500) : 0);
+      if (!first) { const n = nodes.get(p.handle); ripples.push({ x: n.x, y: n.y, t: performance.now(), c: n.c }); }
+    });
+    // one toast per arrival, but collapse a burst into a single toast
+    if (!first && fresh.length === 1) toast("just joined", fresh[0].handle, fresh[0].headline);
+    else if (!first && fresh.length > 1) toast("just landed", `${fresh.length} new builders`, fresh.slice(0, 4).map((p) => p.handle).join(" · ") + (fresh.length > 4 ? " …" : ""));
+    if (first || fresh.length) { feed.innerHTML = d.people.slice(0, 12).map(feedRow).join(""); document.getElementById("feedN").textContent = total ? `${total.toLocaleString()} total` : ""; }
+    if (first) for (const pr of d.mutual_pairs) { const p = nodes.get(pr.a), q = nodes.get(pr.b); if (p && q) { q.x = p.x + 60; q.y = p.y + 30; } }
+    pairs = d.mutual_pairs;
+    const newPairs = pairs.filter((pr) => !seenPairs.has(pr.a + "|" + pr.b));
+    newPairs.forEach((pr) => {
+      seenPairs.add(pr.a + "|" + pr.b);
+      // a newcomer who arrives already matched starts next to their match
+      const p = nodes.get(pr.a), q = nodes.get(pr.b), now = performance.now();
+      if (p && q && now - q.born < 8000) { q.x = p.x + 70; q.y = p.y + 30; } else if (p && q && now - p.born < 8000) { p.x = q.x - 70; p.y = q.y - 30; }
+    });
+    if (!first && newPairs.length === 1) toast("it's a match", `${newPairs[0].a} ♥ ${newPairs[0].b}`, "both revealed. contacts swapped.", true);
+    else if (!first && newPairs.length > 1) toast("it's raining matches", `${newPairs.length} new ♥`, newPairs.slice(0, 3).map((pr) => `${pr.a} ♥ ${pr.b}`).join(" · "), true);
+    document.getElementById("pairs").innerHTML = pairs.length
+      ? pairs.slice(0, 6).map((pr) => `<div class="pair">${esc(pr.a)} <em>♥</em> ${esc(pr.b)}</div>`).join("")
+      : `<div class="none">nobody yet. reveal someone 👀</div>`;
+    first = false;
+  } catch {}
+}
+tick(); setInterval(tick, 6000);
+</script>
+</body>
+</html>
