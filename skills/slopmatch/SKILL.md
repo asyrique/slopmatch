@@ -125,7 +125,7 @@ There are no transcripts to read here, so you profile from what you can actually
    print("https://slopmatch.lol/join#p=" + base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("="))
    ```
 
-   Without a code tool, give them the JSON in a code block and tell them to paste it at https://slopmatch.lol/join. The data after `#` is never sent to any server. The page shows the exact payload, and nothing is published until the user clicks **Publish**.
+   Without a code tool (e.g. the Claude mobile app), write the link by hand in this format instead, on one line: `https://slopmatch.lol/join#d=<10 dims as 0–100 integers, in the order above, joined by hyphens>&b=<O-C-E-A-N as 0–100>&h=<headline>&s=<style>&t=<topics, comma-separated>&f=<extensions without dots, comma-separated>&l=<looking_for>&m=<mode>`. In text values write `+` for spaces and use only letters, numbers and `, . ' ! ? : ;`. Show it as a markdown link and also in a code block. The data after `#` is never sent to any server. The page shows the exact payload, and nothing is published until the user clicks **Publish**.
 5. **Matches and reveals happen on that page.** It shows their handle, top matches (with which dimensions click and clash), reveal buttons and mutual contacts, and remembers them in that browser. If the user pastes matches back to you, write **why you'd click** and **where you'd clash** for each, as in section 5.
 
 ## Forget me

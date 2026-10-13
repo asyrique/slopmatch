@@ -347,7 +347,7 @@ const PROMPT = __PROMPT__;
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------------- installer widgets (kept in sync) ---------------- */
-const state = { os: /Win/.test(navigator.platform) ? "ps" : "sh", room: "world" };
+const state = { os: /iPhone|iPad|Android|Mobile/.test(navigator.userAgent) ? "ai" : /Win/.test(navigator.platform) ? "ps" : "sh", room: "world" };
 try { const q = new URLSearchParams(location.search).get("room"); if (q && ROOM_RE.test(q.toLowerCase())) state.room = q.toLowerCase(); } catch {}
 function cmdFor() {
   const q = state.room === "world" ? "" : `?room=${state.room}`;
@@ -360,11 +360,11 @@ function renderInstallers() {
     w.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.os === state.os)));
     const ai = state.os === "ai";
     w.querySelector(".cmd .p").textContent = ai ? "1" : "$";
-    w.querySelector("[data-copy]").textContent = ai ? "copy prompt" : "copy";
+    w.querySelector("[data-copy]").textContent = ai ? "open in Claude ↗" : "copy";
     w.querySelector(".then").innerHTML = ai
-      ? 'paste it into claude.ai, then paste the JSON it gives back at <a href="/join">slopmatch.lol/join ↗</a> · or <a href="/skill/slopmatch.zip">install the skill</a>'
+      ? 'hit send, then tap the <b>Review and publish</b> link Claude gives you · on the Claude app? <a href="#" data-copyprompt>copy the prompt</a> · <a href="/join">more ways ↗</a>'
       : `then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a href="/r/${state.room}">see who's in ↗</a>`;
-    w.querySelector("[data-cmd]").textContent = ai ? "Copy the slopmatch prompt. It reads Claude's memory of you" : cmdFor();
+    w.querySelector("[data-cmd]").textContent = ai ? "Claude writes your card from its memory of you" : cmdFor();
   });
   document.getElementById("navroom").href = "/r/" + state.room;
 }
@@ -372,14 +372,20 @@ document.querySelectorAll("[data-installer]").forEach((w) => {
   w.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { state.os = t.dataset.os; renderInstallers(); }));
   const btn = w.querySelector("[data-copy]");
   btn.addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(state.os === "ai" ? PROMPT : cmdFor()); } catch {
+    if (state.os === "ai") { window.open("https://claude.ai/new?q=" + encodeURIComponent(PROMPT), "_blank", "noopener"); return; }
+    try { await navigator.clipboard.writeText(cmdFor()); } catch {
       const r = document.createRange(); r.selectNodeContents(w.querySelector("[data-cmd]")); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
     }
     btn.textContent = "copied ✓"; btn.classList.add("ok");
-    setTimeout(() => { btn.textContent = state.os === "ai" ? "copy prompt" : "copy"; btn.classList.remove("ok"); }, 1600);
+    setTimeout(() => { btn.textContent = "copy"; btn.classList.remove("ok"); }, 1600);
   });
 });
 renderInstallers();
+document.addEventListener("click", async (e) => {
+  const a = e.target.closest("[data-copyprompt]"); if (!a) return;
+  e.preventDefault();
+  try { await navigator.clipboard.writeText(PROMPT); a.textContent = "copied ✓ now paste it into a new chat"; } catch { location.href = "/prompt"; }
+});
 
 /* ---------------- live room stats ---------------- */
 let pollTimer;

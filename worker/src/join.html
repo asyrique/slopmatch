@@ -42,6 +42,7 @@
   button:active { transform:scale(.97) } button:disabled { opacity:.5; cursor:default }
   .go { background:linear-gradient(120deg,var(--accent),var(--pink)); color:#1a0b06; box-shadow:0 12px 34px -12px rgba(255,79,154,.6) }
   .ghost { background:rgba(255,255,255,.05); color:var(--ink); border:1px solid var(--line) }
+  a.btn { display:inline-block; text-decoration:none; font:700 14px var(--mono); padding:12px 18px; border-radius:12px }
   .danger { background:transparent; color:var(--pink); border:1px solid rgba(255,79,154,.4) }
   .note { font:13px/1.5 var(--mono); color:var(--muted) }
   .err { color:var(--pink); font:13px var(--mono); margin-top:12px; white-space:pre-wrap }
@@ -74,16 +75,17 @@
   <!-- 1. no payload yet: paste -->
   <section id="vPaste" hidden>
     <h1>Join from <span>anywhere</span>.</h1>
-    <p class="lede">Two pastes. Claude already knows how you build, so let it write your card, check it, then publish it here.</p>
+    <p class="lede">Claude already knows how you build. Ask it, tap the link it gives you, check the card, publish. Works on your phone.</p>
     <div class="card">
-      <div class="k">Step 1 · paste this into claude.ai</div>
-      <p class="note" style="margin:0 0 12px">It asks Claude to go through its memory of you and your past chats, show you a private profile, and give you a pseudonymous card as JSON. Works best with memory or past-chat search on.</p>
+      <div class="k">Step 1 · ask Claude</div>
+      <p class="note" style="margin:0 0 12px">It asks Claude to go through its memory of you and your past chats, show you a private profile, and hand you a link to a pseudonymous card. Works best with memory or past-chat search on.</p>
       <pre id="prompt" style="max-height:180px;white-space:pre-wrap"></pre>
-      <div class="row"><button class="go" id="copyPrompt">Copy prompt</button><a class="note" href="https://claude.ai/new" target="_blank" rel="noopener" style="color:var(--cyan)">open claude.ai ↗</a></div>
+      <div class="row"><a class="go btn" id="openClaude" target="_blank" rel="noopener">Open in Claude ↗</a><button class="ghost" id="copyPrompt">Copy prompt</button></div>
+      <p class="note" style="margin:12px 0 0">Claude opens with the prompt filled in. Hit send, then tap the <b>Review and publish</b> link it gives you. On the Claude app, copy the prompt and paste it into a new chat.</p>
     </div>
     <div class="card">
-      <div class="k">Step 2 · paste the JSON Claude gave you</div>
-      <textarea id="paste" spellcheck="false" placeholder='{ "dims": { "planning": 0.6, ... }, "card": { "headline": "...", ... } }'></textarea>
+      <div class="k">Step 2 · tap Claude's link, or paste it here</div>
+      <textarea id="paste" spellcheck="false" style="min-height:120px" placeholder="Paste Claude's whole reply: the link or the JSON both work"></textarea>
       <div class="row"><button class="go" id="usePaste">Review →</button><span class="note">Nothing is sent until you press Publish on the next step.</span></div>
       <div class="err" id="pasteErr"></div>
     </div>
@@ -188,6 +190,28 @@ function normalize(raw) {
   };
 }
 
+/* Compact link Claude can write by hand (no code tool): #d=80-70-…&b=O-C-E-A-N&h=…&s=…&t=a,b&f=ts,py&l=…&m=… */
+function fromCompact(q) {
+  const nums = (v, n) => {
+    const a = String(v || "").split(/[-,\s]+/).filter(Boolean).map(Number);
+    const pct = a.some((x) => x > 1) || a.every(Number.isInteger); // the prompt asks for 0–100 whole numbers
+    return Array.from({ length: n }, (_, i) => { const x = a[i]; return Number.isFinite(x) ? Math.min(1, Math.max(0, pct ? x / 100 : x)) : 0.5; });
+  };
+  const d = nums(q.get("d"), DIMS.length), b = nums(q.get("b"), 5);
+  const list = (v) => String(v || "").split(",").map((x) => x.trim()).filter(Boolean);
+  return {
+    room: q.get("r") || undefined,
+    dims: Object.fromEntries(DIMS.map((k, i) => [k, d[i]])),
+    card: {
+      headline: q.get("h") || "", style: q.get("s") || "",
+      big5: Object.fromEntries("OCEAN".split("").map((k, i) => [k, b[i]])),
+      topics: list(q.get("t")), file_types: list(q.get("f")).map((x) => (x.startsWith(".") ? x : "." + x)),
+      looking_for: q.get("l") || "just curious", mode: q.get("m") || "similar",
+    },
+  };
+}
+const cleanUrl = (s) => s.replace(/[)\]>.,;]+$/, ""); // trailing punctuation from markdown or prose
+
 async function api(method, path, body, token) {
   const r = await fetch(path, { method, headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
   const d = await r.json().catch(() => ({}));
@@ -207,8 +231,12 @@ function review(p) {
 $("usePaste").onclick = () => {
   $("pasteErr").textContent = "";
   let text = $("paste").value.trim();
-  const m = text.match(/\{[\s\S]*\}/); if (m) text = m[0]; // tolerate prose or code fences around the JSON
-  try { review(normalize(text)); } catch (e) { $("pasteErr").textContent = "Couldn't read that: " + e.message; }
+  try {
+    const link = text.match(/#((?:d|p|j)=[^\s`<>"]+)/);
+    if (link) { review(normalize(parseHash(cleanUrl(link[1])))); return; }
+    const m = text.match(/\{[\s\S]*\}/); if (m) text = m[0]; // tolerate prose or code fences around the JSON
+    review(normalize(text));
+  } catch (e) { $("pasteErr").textContent = "Couldn't read that: " + e.message; }
 };
 $("cancel").onclick = () => { pending = null; start(); };
 $("publish").onclick = async () => {
@@ -301,12 +329,21 @@ function dashboard() {
 }
 
 $("prompt").textContent = PROMPT;
+$("openClaude").href = "https://claude.ai/new?q=" + encodeURIComponent(PROMPT);
 $("copyPrompt").onclick = async () => {
   const b = $("copyPrompt");
   try { await navigator.clipboard.writeText(PROMPT); b.textContent = "Copied ✓"; }
   catch { const r = document.createRange(); r.selectNodeContents($("prompt")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected: press ⌘C"; }
   setTimeout(() => (b.textContent = "Copy prompt"), 1800);
 };
+
+function parseHash(h) {
+  const q = new URLSearchParams(h);
+  if (q.get("p")) return b64urlDecode(q.get("p"));
+  if (q.get("j")) return q.get("j");
+  if (q.get("d")) return fromCompact(q);
+  return null;
+}
 
 /* ---- boot ---- */
 function start() {
@@ -318,12 +355,11 @@ function start() {
   if (h) {
     // keep the card out of history and bookmarks once it's been read
     history.replaceState(null, "", location.pathname + location.search);
-    const params = new URLSearchParams(h);
     try {
-      const raw = params.get("p") ? b64urlDecode(params.get("p")) : params.get("j");
-      if (raw) { review(normalize(raw)); return; }
+      const parsed = parseHash(h);
+      if (parsed) { review(normalize(parsed)); return; }
     } catch (e) {
-      show("vPaste"); $("pasteErr").textContent = "That link's card couldn't be read (" + e.message + "). Paste the JSON instead."; return;
+      show("vPaste"); $("pasteErr").textContent = "That link's card couldn't be read (" + e.message + "). Ask Claude for a new link, or paste it below."; return;
     }
   }
   start();
