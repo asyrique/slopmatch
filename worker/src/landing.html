@@ -105,59 +105,107 @@
   .reveal { opacity: 0; transform: translateY(40px) rotateX(-8deg); transform-origin: top; transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1) }
   .reveal.in { opacity: 1; transform: none }
 
-  /* steps: 3D tilt cards */
-  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; perspective: 1200px }
-  @media (max-width: 980px) { .steps { grid-template-columns: repeat(2, 1fr) } }
-  @media (max-width: 560px) { .steps { grid-template-columns: 1fr } }
-  .step { position: relative; background: linear-gradient(160deg, rgba(30,30,44,.75), rgba(14,14,22,.75)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 20px; padding: 26px 22px 24px; min-height: 270px; transform-style: preserve-3d; transition: transform .25s ease-out, border-color .3s; will-change: transform }
-  .step:hover { border-color: rgba(255,122,89,.4) }
-  .step::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(400px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.09), transparent 40%); opacity: 0; transition: opacity .3s }
-  .step:hover::after { opacity: 1 }
-  .step .n { font: 800 64px/1 var(--display); letter-spacing: -.05em; background: linear-gradient(180deg, var(--c, var(--accent)), transparent 110%); -webkit-background-clip: text; background-clip: text; color: transparent; transform: translateZ(50px); display: block; margin-bottom: 18px }
-  .step h3 { margin: 0 0 8px; font-size: 22px; letter-spacing: -.02em; transform: translateZ(30px) }
-  .step p { margin: 0; color: var(--muted); font-size: 15.5px; transform: translateZ(20px) }
-  .step code { font: 13px var(--mono); color: var(--ink); background: rgba(255,255,255,.07); padding: 1px 6px; border-radius: 5px }
+  /* how it works: a live Claude Code session */
+  .rail { list-style: none; padding: 0; margin: 0 0 18px; display: flex; gap: 8px; flex-wrap: wrap }
+  .rail li { font: 600 13px var(--mono); color: var(--dim); padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); transition: all .4s; display: flex; gap: 8px; align-items: center }
+  .rail li b { color: inherit; opacity: .6 }
+  .rail li.on { color: #1a0b06; background: var(--c); border-color: var(--c); box-shadow: 0 8px 30px -8px var(--c); transform: translateY(-2px) }
+  .rail li.done { color: var(--ink); border-color: rgba(255,255,255,.2) }
+  .term { max-width: 920px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: rgba(9,9,14,.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 50px 120px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.02) inset }
+  .term-bar { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); font: 12px var(--mono); color: var(--dim) }
+  .term-bar i { width: 11px; height: 11px; border-radius: 50%; background: #3a3a46 } .term-bar i:nth-child(1) { background: #ff5f57 } .term-bar i:nth-child(2) { background: #febc2e } .term-bar i:nth-child(3) { background: #28c840 }
+  .term-bar span { margin-left: 8px; flex: 1 }
+  .term-bar button { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 12px var(--mono); border-radius: 8px; padding: 4px 10px; cursor: pointer }
+  .term-bar button:hover { color: var(--ink); border-color: var(--accent) }
+  .term-body { padding: 22px 22px 26px; font: 14.5px/1.65 var(--mono); min-height: 520px; color: #d9d6e2 }
+  @media (max-width: 640px) { .term-body { font-size: 13px; padding: 16px; min-height: 600px } }
+  .tl { margin: 0 0 12px; animation: tin .35s ease both }
+  @keyframes tin { from { opacity: 0; transform: translateY(6px) } }
+  .tl.user::before { content: "> "; color: var(--accent); font-weight: 700 }
+  .tl.user { color: var(--ink) }
+  .tl.user .caret { display: inline-block; width: 8px; height: 1.1em; background: var(--accent); vertical-align: -3px; margin-left: 2px; animation: blink 1s steps(2) infinite }
+  @keyframes blink { 50% { opacity: 0 } }
+  .tl.tool { color: var(--cyan) } .tl.tool::before { content: "⏺ "; color: var(--lime) }
+  .tl.ok { color: var(--lime) }
+  .tl.claude { font-family: var(--display); font-size: 17px; line-height: 1.5; color: #ebe8f2; padding-left: 14px; border-left: 2px solid rgba(255,122,89,.5); max-width: 62ch }
+  .tl.claude em { font-style: normal; color: var(--accent) }
+  .tl .bar { display: inline-block; vertical-align: middle; width: 180px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; margin: 0 10px }
+  .tl .bar u { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--pink), var(--lime)); transition: width 1.6s cubic-bezier(.3,.8,.3,1) }
+  .tl.json { background: #06060a; border: 1px solid rgba(200,255,77,.18); border-radius: 12px; padding: 12px 14px; color: #cfe9d2; font-size: 13px; white-space: pre-wrap; max-width: 640px }
+  .tl.json .k { color: var(--lime) } .tl.json .s { color: #ffd9a8 } .tl.json .n { color: var(--cyan) }
+  .tl.mcard { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; max-width: 640px; padding: 16px 18px; border-radius: 14px; border: 1px solid rgba(87,227,255,.25); background: linear-gradient(140deg, rgba(87,227,255,.08), rgba(255,79,154,.06)); font-family: var(--display) }
+  .mcard .sc { grid-row: span 3; font: 800 48px/1 var(--display); letter-spacing: -.04em; color: var(--lime) }
+  .mcard .mh { font-weight: 800; font-size: 20px; letter-spacing: -.02em } .mcard .mh small { font: 12px var(--mono); color: var(--muted); margin-left: 8px }
+  .mcard .y { color: #cfe9d2; font-size: 15px } .mcard .y b { color: var(--lime) } .mcard .x { color: #f6c9dc; font-size: 15px } .mcard .x b { color: var(--pink) }
 
-  /* privacy flip card */
-  .privacy { display: grid; grid-template-columns: 1fr 1.1fr; gap: 56px; align-items: center }
-  @media (max-width: 900px) { .privacy { grid-template-columns: 1fr; gap: 32px } }
-  .flipwrap { perspective: 1600px; min-height: 440px; cursor: pointer }
-  .flip { position: relative; width: 100%; min-height: 440px; transform-style: preserve-3d; transition: transform 1s cubic-bezier(.3,1.4,.4,1) }
-  .flipwrap.flipped .flip { transform: rotateY(180deg) }
-  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 22px; padding: 26px; border: 1px solid var(--line); overflow: hidden }
-  .face.front { background: linear-gradient(150deg, rgba(40,20,22,.9), rgba(16,12,18,.92)) }
-  .face.back { background: linear-gradient(150deg, rgba(18,34,22,.92), rgba(10,16,14,.94)); transform: rotateY(180deg) }
-  .face h4 { margin: 0 0 4px; font-size: 14px; font: 600 13px var(--mono); letter-spacing: .12em; text-transform: uppercase }
-  .front h4 { color: var(--pink) } .back h4 { color: var(--lime) }
-  .face .hint { position: absolute; right: 22px; top: 24px; font: 12px var(--mono); color: var(--dim) }
-  .stays { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px }
-  .stays li { display: flex; gap: 12px; align-items: baseline; font-size: 17px; color: #d8d4e0 }
-  .stays li::before { content: "✕"; font: 700 13px var(--mono); color: var(--pink) }
-  .payload { margin: 16px 0 0; font: 13px/1.6 var(--mono); color: #cfe9d2; white-space: pre; overflow: hidden }
-  .payload .k { color: var(--lime) } .payload .s { color: #ffd9a8 } .payload .num { color: var(--cyan) } .payload .c { color: var(--dim) }
-  .facts { display: grid; gap: 18px }
-  .fact { display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: start }
-  .fact .ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgba(255,255,255,.05); border: 1px solid var(--line); font-size: 20px }
-  .fact b { display: block; font-size: 19px; letter-spacing: -.01em; margin-bottom: 2px }
-  .fact span { color: var(--muted); font-size: 15.5px }
+  /* privacy: the bouncer */
+  .bouncer { display: grid; grid-template-columns: 1.35fr 120px 1fr; min-height: 380px; border-radius: 22px; border: 1px solid var(--line); background: rgba(12,12,18,.66); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); overflow: hidden; position: relative }
+  .zone { padding: 22px; position: relative }
+  .zl { font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; display: flex; align-items: center; gap: 8px }
+  .zl::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent) }
+  .cloud .zl::before { background: var(--lime) }
+  .cloud { background: radial-gradient(120% 90% at 100% 0%, rgba(200,255,77,.07), transparent 60%) }
+  .chips { display: flex; flex-wrap: wrap; gap: 9px; align-content: flex-start }
+  .chip { font: 13px var(--mono); padding: 7px 11px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); color: #d8d4e0; white-space: nowrap; position: relative; will-change: transform }
+  .chip.ok { border-color: rgba(200,255,77,.35); color: var(--lime); background: rgba(200,255,77,.06) }
+  .chip.nope { border-color: rgba(255,79,154,.6); color: var(--pink); background: rgba(255,79,154,.1) }
+  .chip.nope::after { content: "✕ stays home"; position: absolute; left: 50%; top: -24px; transform: translateX(-50%); font: 700 11px var(--mono); color: var(--pink); white-space: nowrap }
+  .gate { position: relative; display: grid; place-items: center }
+  .gate-line { position: absolute; top: 14px; bottom: 14px; left: 50%; width: 2px; transform: translateX(-50%); background: repeating-linear-gradient(to bottom, var(--accent) 0 10px, transparent 10px 18px); opacity: .7 }
+  .gate-tag { position: relative; z-index: 1; font: 700 12px/1.3 var(--mono); text-align: center; color: #1a0b06; background: var(--accent); padding: 10px 12px; border-radius: 12px; box-shadow: 0 0 40px -6px rgba(255,122,89,.7); text-transform: uppercase; letter-spacing: .06em }
+  .gate-tag small { display: block; font-weight: 400; text-transform: none; letter-spacing: 0; opacity: .8 }
+  .gate.zap .gate-tag { animation: zap .45s ease }
+  @keyframes zap { 30% { transform: scale(1.12) rotate(-3deg); background: var(--pink) } }
+  .arrived { display: flex; flex-direction: column; gap: 9px; align-items: flex-start }
+  .arrived .chip { animation: pop .5s cubic-bezier(.3,1.6,.4,1) both }
+  @keyframes pop { from { opacity: 0; transform: scale(.6) translateX(-20px) } }
+  .arrived .total { font: 12px var(--mono); color: var(--muted); margin-top: 6px }
+  @media (max-width: 760px) {
+    .bouncer { grid-template-columns: 1fr; grid-template-rows: auto 70px auto }
+    .gate-line { top: 50%; bottom: auto; left: 14px; right: 14px; width: auto; height: 2px; transform: translateY(-50%); background: repeating-linear-gradient(to right, var(--accent) 0 10px, transparent 10px 18px) }
+    .chip { white-space: normal }
+  }
+  .badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px }
+  .badge { font: 13px var(--mono); color: #d8d4e0; padding: 10px 14px; border-radius: 12px; border: 1px dashed rgba(255,255,255,.18); background: rgba(255,255,255,.03) }
+  .badge b { color: var(--lime); margin-right: 6px }
+  .badge code { font: 12px var(--mono); color: var(--ink); background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 5px }
 
-  /* dimensions */
-  .dimgrid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center }
-  @media (max-width: 900px) { .dimgrid { grid-template-columns: 1fr; gap: 28px } }
-  .dims { background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); border-radius: 22px; padding: 24px 24px 18px }
-  .dims .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; font: 13px var(--mono); color: var(--muted); gap: 12px; flex-wrap: wrap }
-  .who { display: inline-flex; gap: 14px } .who span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--c) }
-  .score { font: 800 40px/1 var(--display); letter-spacing: -.04em; color: var(--lime) } .score small { font: 13px var(--mono); color: var(--muted); letter-spacing: 0; margin-left: 6px }
-  .drow { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: center; padding: 7px 0; font: 13px var(--mono); color: #cdc9d6 }
-  @media (max-width: 420px) { .drow { grid-template-columns: 96px 1fr; font-size: 12px } }
-  .track { position: relative; height: 12px; background: rgba(255,255,255,.05); border-radius: 99px }
-  .bar { position: absolute; top: 0; height: 12px; width: 12px; border-radius: 99px; transform: translateX(-50%); transition: left 1.2s cubic-bezier(.3,1.3,.4,1); box-shadow: 0 0 16px var(--c) ; background: var(--c) }
-  .gap { position: absolute; top: 5px; height: 2px; background: rgba(255,255,255,.18); transition: left 1.2s cubic-bezier(.3,1.3,.4,1), width 1.2s cubic-bezier(.3,1.3,.4,1) }
-  .modes { display: flex; gap: 8px; margin-top: 18px }
-  .mode { appearance: none; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 600 13px var(--mono); padding: 8px 14px; border-radius: 99px; transition: .2s }
+  /* matching: the slop compatibility test */
+  .lab { display: grid; grid-template-columns: 1fr 1.1fr; gap: 18px; align-items: stretch }
+  @media (max-width: 960px) { .lab { grid-template-columns: 1fr } }
+  .panel { background: rgba(14,14,22,.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); border-radius: 22px; padding: 24px }
+  .panel h3 { margin: 0 0 18px; font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent) }
+  .sl { margin-bottom: 18px }
+  .sl .ends { display: flex; justify-content: space-between; font: 13px var(--mono); color: var(--muted); margin-bottom: 6px; gap: 12px }
+  .sl .ends span:last-child { text-align: right }
+  .sl .ends .hi { color: var(--ink) }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; border-radius: 99px; background: linear-gradient(90deg, var(--accent) var(--p,50%), rgba(255,255,255,.08) var(--p,50%)); outline: none; cursor: pointer }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff6c9, var(--accent) 50%, var(--pink)); border: 0; box-shadow: 0 4px 14px rgba(255,122,89,.6); transition: transform .15s }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.18) }
+  input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff6c9, var(--accent) 50%, var(--pink)); border: 0 }
+  .modes { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap }
+  .mode { appearance: none; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 600 13px var(--mono); padding: 9px 14px; border-radius: 99px; transition: .2s }
   .mode[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
-  .formula { font: 13px/1.7 var(--mono); color: var(--muted); margin-top: 26px }
-  .formula b { color: var(--ink); font-weight: 600 }
+  .res { display: grid; grid-template-columns: 220px 1fr; gap: 18px; align-items: center }
+  @media (max-width: 520px) { .res { grid-template-columns: 1fr; justify-items: center } }
+  .radar { width: 220px; height: 220px; overflow: visible }
+  .radar .grid { fill: none; stroke: rgba(255,255,255,.08) } .radar .ax { stroke: rgba(255,255,255,.06) }
+  .radar .me { fill: rgba(255,122,89,.22); stroke: var(--accent); stroke-width: 2 }
+  .radar .them { fill: rgba(87,227,255,.18); stroke: var(--cyan); stroke-width: 2 }
+  .radar text { font: 10px var(--mono); fill: var(--muted) }
+  .top .lf { font: 600 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cyan) }
+  .top .h { font: 800 28px/1.05 var(--display); letter-spacing: -.03em; margin: 4px 0 2px }
+  .top .hl { color: var(--muted); font-size: 15px; margin-bottom: 10px }
+  .top .big { font: 800 64px/1 var(--display); letter-spacing: -.05em; color: var(--lime) } .top .big small { font: 13px var(--mono); color: var(--muted); letter-spacing: 0; margin-left: 6px }
+  .why { margin-top: 18px; display: grid; gap: 8px; font-size: 15.5px }
+  .why div { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line) }
+  .why .y b { color: var(--lime) } .why .x b { color: var(--pink) }
+  .rest { margin-top: 14px; display: grid; gap: 6px }
+  .rest .r { display: grid; grid-template-columns: 1fr 120px 34px; gap: 10px; align-items: center; font: 13px var(--mono); color: var(--muted) }
+  .rest .r i { height: 6px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; display: block }
+  .rest .r i u { display: block; height: 100%; background: var(--cyan); opacity: .7; transition: width .5s cubic-bezier(.3,1.2,.4,1) }
+  .formula { font: 13px/1.7 var(--mono); color: var(--dim); margin-top: 18px }
+  .formula b { color: var(--muted); font-weight: 600 }
 
   /* handle slot machine */
   .handles { text-align: center }
@@ -238,78 +286,58 @@
 
   <section id="how">
     <div class="kicker reveal">How it works</div>
-    <h2 class="reveal">Four steps. One of them is typing a slash.</h2>
-    <p class="lede reveal">No sign-up, no OAuth and no uploading your chats. One global pool of builders, wherever you are. Works in Claude Code, Codex and claude.ai. Your own agent does the profiling, on your own machine, with its own reasoning.</p>
-    <div class="steps">
-      <div class="step reveal" style="--c:var(--accent)"><span class="n">01</span><h3>Install</h3><p>One command adds the slopmatch plugin to Claude Code: a skill plus a small, readable CLI. On claude.ai or your phone, nothing to install.</p></div>
-      <div class="step reveal" style="--c:var(--pink);transition-delay:.08s"><span class="n">02</span><h3>Get read</h3><p>Your agent goes through your recent transcripts and skills: planner or diver, big delegator or tight steerer, 2am shipper or 9-to-5.</p></div>
-      <div class="step reveal" style="--c:var(--cyan);transition-delay:.16s"><span class="n">03</span><h3>Approve &amp; publish</h3><p>You see the exact payload first: a pseudonymous card and ten numbers. Nothing goes up until you say yes.</p></div>
-      <div class="step reveal" style="--c:var(--lime);transition-delay:.24s"><span class="n">04</span><h3>Match &amp; reveal</h3><p>See why you'd click and where you'd clash. Contacts swap only if you <em>both</em> reveal.</p></div>
+    <h2 class="reveal">Type one slash. Get read like a book.</h2>
+    <p class="lede reveal">Here's a real run, sped up. Your own Claude does every bit of this, on your own machine.</p>
+    <ol class="rail reveal" id="rail">
+      <li style="--c:var(--accent)"><b>01</b>install</li>
+      <li style="--c:var(--pink)"><b>02</b>get read</li>
+      <li style="--c:var(--cyan)"><b>03</b>approve</li>
+      <li style="--c:var(--lime)"><b>04</b>match</li>
+    </ol>
+    <div class="term reveal" id="term">
+      <div class="term-bar"><i></i><i></i><i></i><span>claude · ~/code</span><button id="replay" type="button">↻ replay</button></div>
+      <div class="term-body" id="termBody" aria-live="polite"></div>
     </div>
   </section>
 
   <section id="privacy">
-    <div class="privacy">
-      <div>
-        <div class="kicker reveal">Privacy</div>
-        <h2 class="reveal">Your slop stays home.</h2>
-        <p class="lede reveal" style="margin-bottom:36px">The server never sees a single prompt. It gets ten numbers and a card you've read and approved.</p>
-        <div class="facts">
-          <div class="fact reveal"><div class="ic">🔒</div><div><b>Profiled locally</b><span>Transcripts, file paths, project names and skill contents never leave your machine.</span></div></div>
-          <div class="fact reveal"><div class="ic">👀</div><div><b>Dry run first</b><span>Publish prints the exact JSON before anything is sent. Your agent has to show it to you.</span></div></div>
-          <div class="fact reveal"><div class="ic">🎭</div><div><b>Double-blind reveal</b><span>You're a pseudonym until two people pick each other. One-sided interest stays invisible.</span></div></div>
-          <div class="fact reveal"><div class="ic">🧽</div><div><b>Forget me</b><span><code style="font:13px var(--mono)">slopmatch delete --yes</code> wipes your profile and reveals from the server.</span></div></div>
-        </div>
-      </div>
-      <div class="flipwrap reveal" id="flip" role="button" tabindex="0" aria-label="Flip to compare what stays and what leaves">
-        <div class="flip">
-          <div class="face front">
-            <h4>Stays on your machine</h4><span class="hint">tap to flip ↻</span>
-            <ul class="stays">
-              <li>Every prompt you've ever typed</li>
-              <li>Claude's replies</li>
-              <li>File paths &amp; project names</li>
-              <li>Installed skill names &amp; descriptions</li>
-              <li>Employer &amp; client names</li>
-              <li>Secrets in your transcripts (redacted anyway)</li>
-              <li>That thing you asked at 3am</li>
-            </ul>
-          </div>
-          <div class="face back">
-            <h4>Leaves, after you approve</h4><span class="hint">tap to flip ↻</span>
-<div class="payload"><span class="c">// the whole payload. really.</span>
-{
-  <span class="k">"dims"</span>: { <span class="k">"planning"</span>: <span class="num">0.72</span>, <span class="k">"verification"</span>: <span class="num">0.41</span>,
-            <span class="k">"night_owl"</span>: <span class="num">0.88</span>, <span class="c">/* +7 more */</span> },
-  <span class="k">"card"</span>: {
-    <span class="k">"headline"</span>: <span class="s">"ships whatsapp bots at 2am"</span>,
-    <span class="k">"style"</span>: <span class="s">"plans in prose, delegates big…"</span>,
-    <span class="k">"big5"</span>: { <span class="k">"O"</span>: <span class="num">0.8</span>, <span class="k">"C"</span>: <span class="num">0.6</span>, … },
-    <span class="k">"topics"</span>: [<span class="s">"bots"</span>, <span class="s">"payments"</span>],
-    <span class="k">"looking_for"</span>: <span class="s">"cofounder"</span>,
-    <span class="k">"mode"</span>: <span class="s">"complement"</span>
-  }
-}</div>
-          </div>
-        </div>
-      </div>
+    <div class="kicker reveal">Privacy</div>
+    <h2 class="reveal">Your slop stays home.</h2>
+    <p class="lede reveal">Claude reads everything, locally. Then a dry-run gate shows you exactly what would leave, and nothing goes until you say yes. Spoiler: it's ten numbers and a card.</p>
+    <div class="bouncer reveal" id="bouncer">
+      <div class="zone home"><div class="zl">your machine</div><div class="chips" id="homeChips"></div></div>
+      <div class="gate" id="gate"><div class="gate-line"></div><div class="gate-tag">dry run<small>you approve</small></div></div>
+      <div class="zone cloud"><div class="zl">slopmatch.lol</div><div class="arrived" id="arrived"></div></div>
+    </div>
+    <div class="badges reveal">
+      <span class="badge"><b>✓</b>profiled on your machine</span>
+      <span class="badge"><b>✓</b>you see the exact JSON first</span>
+      <span class="badge"><b>✓</b>pseudonym until a mutual reveal</span>
+      <span class="badge"><b>✓</b><code>slopmatch delete --yes</code> forgets you</span>
     </div>
   </section>
 
   <section id="match">
-    <div class="dimgrid">
-      <div>
-        <div class="kicker reveal">Matching</div>
-        <h2 class="reveal">Ten dimensions of how you vibe-code.</h2>
-        <p class="lede reveal" style="margin-bottom:0">Want someone who builds like you? Pick <b>similar</b>. Want the planner to your explorer? Pick <b>complement</b>, and gaps in planning, exploration, delegation and steering start counting <em>for</em> you.</p>
-        <p class="formula reveal"><b>score</b> = 65% dimension fit + 25% shared topics + 10% shared file types</p>
+    <div class="kicker reveal">Matching</div>
+    <h2 class="reveal">Take the slop compatibility test.</h2>
+    <p class="lede reveal">Slide to describe how you build. These builders are made up, but they're ranked the way the real thing ranks people. Pick <b>complement</b> and opposites on planning, delegation and steering start to attract.</p>
+    <div class="lab reveal">
+      <div class="panel">
+        <h3>You, roughly</h3>
+        <div id="sliders"></div>
+        <div class="modes"><button class="mode" aria-pressed="true" data-mode="similar">similar</button><button class="mode" aria-pressed="false" data-mode="complement">complement</button><button class="mode" aria-pressed="false" data-mode="random">🎲 randomise me</button></div>
       </div>
-      <div class="dims reveal" id="dims">
-        <div class="head"><span class="who"><span style="--c:var(--accent)" id="ha">you</span><span style="--c:var(--cyan)" id="hb">them</span></span><span class="score" id="score">—<small>match</small></span></div>
-        <div id="rows"></div>
-        <div class="modes"><button class="mode" aria-pressed="true" data-mode="similar">similar</button><button class="mode" aria-pressed="false" data-mode="complement">complement</button><button class="mode" aria-pressed="false" data-mode="shuffle">↻ new pair</button></div>
+      <div class="panel">
+        <h3>Your top match</h3>
+        <div class="res">
+          <svg class="radar" id="radar" viewBox="-158 -142 316 284" aria-hidden="true"></svg>
+          <div class="top"><div class="lf" id="tLf"></div><div class="h" id="tH"></div><div class="hl" id="tHl"></div><div class="big"><span id="tScore">0</span><small>vibe fit</small></div></div>
+        </div>
+        <div class="why"><div class="y" id="why"></div><div class="x" id="clash"></div></div>
+        <div class="rest" id="rest"></div>
       </div>
     </div>
+    <p class="formula reveal">the real score: <b>65%</b> these dimensions (ten of them, from your transcripts) + <b>25%</b> shared topics + <b>10%</b> shared file types</p>
   </section>
 
   <section class="handles">
@@ -434,57 +462,177 @@ poll();
 const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .15 });
 document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 
-/* ---------------- 3D tilt cards ---------------- */
-if (!reduce && matchMedia("(hover: hover)").matches) {
-  document.querySelectorAll(".step").forEach((c) => {
-    c.addEventListener("pointermove", (e) => {
-      const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-      c.style.transform = `rotateY(${(x - .5) * 18}deg) rotateX(${(.5 - y) * 14}deg) translateZ(10px)`;
-      c.style.setProperty("--mx", x * 100 + "%"); c.style.setProperty("--my", y * 100 + "%");
-    });
-    c.addEventListener("pointerleave", () => { c.style.transform = ""; });
-  });
-}
-
-/* ---------------- flip card ---------------- */
-const flip = document.getElementById("flip");
-const doFlip = () => flip.classList.toggle("flipped");
-flip.addEventListener("click", doFlip);
-flip.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); doFlip(); } });
-setTimeout(function auto() { if (!flip.matches(":hover")) doFlip(); setTimeout(auto, 5200); }, 4000);
-
-/* ---------------- dimension demo ---------------- */
-const DIMS = ["planning", "delegation_size", "verification", "steering", "exploration", "verbosity", "curiosity", "warmth", "frustration", "night_owl"];
-const COMP = new Set(["planning", "exploration", "delegation_size", "steering"]);
-const rows = document.getElementById("rows");
-DIMS.forEach((d) => { rows.insertAdjacentHTML("beforeend", `<div class="drow"><span>${d}</span><div class="track"><div class="gap"></div><div class="bar" style="--c:var(--accent)"></div><div class="bar" style="--c:var(--cyan)"></div></div></div>`); });
-let mode = "similar", A, B;
-const rnd = () => Math.round((.08 + Math.random() * .84) * 100) / 100;
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
-const handle = () => pick(WORDS.adj) + "-" + pick(WORDS.animal);
-function newPair() {
-  A = DIMS.map(rnd);
-  B = A.map((v, i) => Math.min(.95, Math.max(.05, mode === "complement" && COMP.has(DIMS[i]) ? 1 - v + (Math.random() - .5) * .2 : v + (Math.random() - .5) * .35)));
-  document.getElementById("ha").textContent = handle(); document.getElementById("hb").textContent = handle();
+const sleep = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+
+/* ---------------- how it works: a scripted Claude Code session ---------------- */
+const SESSION = [
+  { s: 0, k: "user", t: "/plugin install slopmatch --marketplace asyrique/slopmatch" },
+  { s: 0, k: "ok", t: "✔ Installed slopmatch@slopmatch" },
+  { s: 1, k: "user", t: "/slopmatch:me" },
+  { s: 1, k: "tool", t: "slopmatch extract --days 90" },
+  { s: 1, k: "bar", t: "reading 412 sessions · 9,803 prompts" },
+  { s: 1, k: "claude", t: "Okay. Gently: you write a <em>three-paragraph plan</em>, then hand over the entire app and go make kopi. You test by clicking around. <em>61%</em> of your prompts land after 11pm, and you say please to me every single time. Thank you." },
+  { s: 2, k: "claude", t: "Here's everything that would leave this machine:" },
+  { s: 2, k: "json", t: '{ <span class="k">"dims"</span>: [<span class="n">0.82</span>, <span class="n">0.91</span>, <span class="n">0.23</span>, <span class="n">0.31</span>, … <span class="n">10 numbers</span>],\n  <span class="k">"card"</span>: { <span class="k">"headline"</span>: <span class="s">"plans like an architect, ships like a raccoon"</span>,\n            <span class="k">"topics"</span>: [<span class="s">"bots"</span>, <span class="s">"payments"</span>], <span class="k">"looking_for"</span>: <span class="s">"cofounder"</span> } }' },
+  { s: 2, k: "claude", t: "Nothing else. No prompts, no paths, no names. Publish it?" },
+  { s: 2, k: "user", t: "yes" },
+  { s: 2, k: "ok", t: "✔ Published. You're kiasu-kancil 🎉" },
+  { s: 3, k: "tool", t: "slopmatch matches" },
+  { s: 3, k: "mcard", t: "" },
+  { s: 3, k: "claude", t: "Want me to reveal you to shiok-pangolin? They'll only see your contact if they pick you too." },
+];
+const termBody = document.getElementById("termBody"), railItems = [...document.querySelectorAll("#rail li")];
+let runId = 0;
+async function typeInto(el, text, id) {
+  const caret = document.createElement("span"); caret.className = "caret"; el.append(caret);
+  for (const ch of text) { if (id !== runId) return; caret.before(ch); await sleep(ch === " " ? 18 : 30 + Math.random() * 40); }
+  await sleep(250); caret.remove();
 }
-function renderDims() {
-  let fit = 0;
-  [...rows.children].forEach((row, i) => {
-    const [gap, ba, bb] = row.querySelectorAll(".gap,.bar");
-    ba.style.left = A[i] * 100 + "%"; bb.style.left = B[i] * 100 + "%";
-    gap.style.left = Math.min(A[i], B[i]) * 100 + "%"; gap.style.width = Math.abs(A[i] - B[i]) * 100 + "%";
-    const diff = Math.abs(A[i] - B[i]);
-    fit += mode === "complement" && COMP.has(DIMS[i]) ? diff : 1 - diff;
-  });
-  const score = Math.round((.65 * fit / DIMS.length + .25 * (.3 + Math.random() * .4) + .1 * (.4 + Math.random() * .5)) * 100);
-  const el = document.getElementById("score"); const from = parseInt(el.textContent) || 0; const t0 = performance.now();
-  (function step(t) { const k = Math.min(1, (t - t0) / 900); el.firstChild.nodeValue = Math.round(from + (score - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); })(t0);
+async function playSession() {
+  const id = ++runId; termBody.innerHTML = "";
+  for (const [i, line] of SESSION.entries()) {
+    if (id !== runId) return;
+    railItems.forEach((li, j) => { li.classList.toggle("on", j === line.s); li.classList.toggle("done", j < line.s); });
+    const el = document.createElement("div"); el.className = "tl " + line.k;
+    if (line.k === "user") { termBody.append(el); await sleep(350); await typeInto(el, line.t, id); }
+    else if (line.k === "bar") {
+      el.className = "tl tool"; el.innerHTML = `<span>${line.t}</span><span class="bar"><u></u></span><span class="pct">0%</span>`; termBody.append(el);
+      await sleep(60); el.querySelector("u").style.width = "100%";
+      for (let p = 0; p <= 100; p += 5) { if (id !== runId) return; el.querySelector(".pct").textContent = p + "%"; await sleep(70); }
+    } else if (line.k === "mcard") {
+      el.innerHTML = `<div class="sc">87</div><div class="mh">shiok-pangolin<small>cofounder · ships first, asks questions never</small></div>
+        <div class="y"><b>why you'd click:</b> you both hand over whole features and ship after midnight</div>
+        <div class="x"><b>where you'd clash:</b> they write tests. you… click around.</div>`;
+      termBody.append(el);
+    } else { el.innerHTML = line.t; termBody.append(el); }
+    await sleep(line.k === "claude" ? 1500 : line.k === "json" ? 1800 : 700);
+  }
+  railItems.forEach((li) => { li.classList.remove("on"); li.classList.add("done"); });
 }
+document.getElementById("replay").addEventListener("click", playSession);
+new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { playSession(); o.disconnect(); } }, { threshold: .35 }).observe(document.getElementById("term"));
+
+/* ---------------- privacy: the bouncer ---------------- */
+const NOPE = ["every prompt you've typed", "Claude's replies", "~/code/acme-billing/", "AWS_SECRET_ACCESS_KEY=•••", "client: ████ Pte Ltd", "your skill files", '"why is prod down" (3:14am)', "your real name", "git log", "that one .env"];
+const OK = ["10 numbers", "a headline", "2–3 sentences on style", "coarse topics", "big 5 (for fun)"];
+const home = document.getElementById("homeChips"), arrived = document.getElementById("arrived"), gate = document.getElementById("gate");
+function seedHome() {
+  home.innerHTML = ""; arrived.innerHTML = "";
+  const items = [...NOPE.map((t) => [t, false]), ...OK.map((t) => [t, true])].sort(() => Math.random() - .5);
+  for (const [t, ok] of items) { const c = document.createElement("span"); c.className = "chip" + (ok ? " ok" : ""); c.textContent = t; c.dataset.ok = ok ? "1" : ""; home.append(c); }
+}
+function towardGate(chip) {
+  const a = chip.getBoundingClientRect(), g = gate.getBoundingClientRect();
+  return [g.left + g.width / 2 - (a.left + a.width / 2), g.top + g.height / 2 - (a.top + a.height / 2)];
+}
+let bouncerOn = false, turn = 0;
+async function bouncerLoop() {
+  if (bouncerOn) return; bouncerOn = true;
+  seedHome();
+  while (true) {
+    const okLeft = [...home.querySelectorAll('.chip[data-ok="1"]')], nope = [...home.querySelectorAll('.chip:not([data-ok="1"])')];
+    if (!okLeft.length) { await sleep(3500); seedHome(); continue; }
+    const letThrough = ++turn % 3 === 0;
+    const chip = letThrough ? okLeft[0] : pick(nope);
+    const [dx, dy] = towardGate(chip);
+    if (letThrough) {
+      await chip.animate([{ transform: "none" }, { transform: `translate(${dx}px, ${dy}px) scale(.9)`, opacity: 1 }, { transform: `translate(${dx * 1.25}px, ${dy * 1.25}px) scale(.6)`, opacity: 0 }], { duration: reduce ? 1 : 1100, easing: "cubic-bezier(.5,0,.3,1)" }).finished;
+      chip.remove();
+      const c = document.createElement("span"); c.className = "chip ok"; c.textContent = "✓ " + chip.textContent; arrived.append(c);
+      const n = arrived.querySelectorAll(".chip").length;
+      arrived.querySelector(".total")?.remove();
+      arrived.insertAdjacentHTML("beforeend", `<span class="total">${n} of ${OK.length} things uploaded, all approved by you</span>`);
+    } else {
+      chip.style.zIndex = 2;
+      await chip.animate([{ transform: "none" }, { transform: `translate(${dx * .88}px, ${dy * .88}px)` }], { duration: reduce ? 1 : 750, easing: "cubic-bezier(.6,0,.9,.4)", fill: "forwards" }).finished;
+      gate.classList.remove("zap"); void gate.offsetWidth; gate.classList.add("zap"); chip.classList.add("nope");
+      await chip.animate([{ transform: `translate(${dx * .88}px, ${dy * .88}px)` }, { transform: `translate(${dx * .8 - 8}px, ${dy * .8}px) rotate(-6deg)` }, { transform: `translate(${dx * .84}px, ${dy * .84}px) rotate(5deg)` }, { transform: "none" }], { duration: reduce ? 1 : 900, easing: "cubic-bezier(.3,1.4,.4,1)", fill: "forwards" }).finished;
+      chip.getAnimations().forEach((a) => a.cancel());
+      setTimeout(() => chip.classList.remove("nope"), 600);
+    }
+    await sleep(500);
+  }
+}
+new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { bouncerLoop(); o.disconnect(); } }, { threshold: .3 }).observe(document.getElementById("bouncer"));
+
+/* ---------------- matching: the slop compatibility test ---------------- */
+const DIMS6 = [
+  { k: "planning", lo: "dive straight in", hi: "write the plan first", you: ["dive straight in", "plan everything first"] },
+  { k: "delegation_size", lo: "one function at a time", hi: "build me the whole app", you: ["go one function at a time", "hand over whole apps"] },
+  { k: "verification", lo: "vibes, ship it", hi: "tests or it didn't happen", you: ["ship on vibes", "test everything"] },
+  { k: "steering", lo: "let it cook", hi: "interrupt constantly", you: ["let the agent cook", "interrupt the agent constantly"] },
+  { k: "warmth", lo: '"do it."', hi: "please & thank you", you: ['just say "do it."', "say please to the agent"] },
+  { k: "night_owl", lo: "office hours", hi: "3am goblin", you: ["keep office hours", "build at 3am"] },
+];
+const COMP6 = new Set(["planning", "delegation_size", "steering"]);
+const CAST = [
+  { h: "shiok-pangolin", hl: "ships first, asks questions never", lf: "cofounder", d: [.15, .9, .15, .2, .45, .9] },
+  { h: "kiasu-kancil", hl: "has a plan for the plan", lf: "teammate", d: [.95, .4, .9, .6, .7, .2] },
+  { h: "santai-dugong", hl: "pair-programs at a gentle pace", lf: "pairing", d: [.5, .3, .6, .35, .95, .3] },
+  { h: "garang-harimau", hl: "argues with the agent and wins", lf: "cofounder", d: [.6, .5, .7, .95, .1, .6] },
+  { h: "mager-slowloris", hl: "delegates the delegating", lf: "just curious", d: [.2, .95, .3, .1, .5, .55] },
+  { h: "kilig-tarsier", hl: "tests everything, emotionally", lf: "teammate", d: [.7, .4, .95, .5, .85, .8] },
+  { h: "jialat-mudskipper", hl: "prod is the test environment", lf: "cofounder", d: [.1, .8, .05, .3, .3, .95] },
+  { h: "rajin-hornbill", hl: "spec, then tests, then code. every time.", lf: "teammate", d: [.9, .6, .85, .7, .6, .1] },
+];
+const me = [.75, .85, .25, .3, .8, .7];
+let mmode = "similar";
+const slidersEl = document.getElementById("sliders");
+DIMS6.forEach((d, i) => {
+  slidersEl.insertAdjacentHTML("beforeend", `<div class="sl"><div class="ends"><span>${d.lo}</span><span>${d.hi}</span></div><input type="range" min="0" max="100" value="${me[i] * 100}" aria-label="${d.lo} to ${d.hi}" data-i="${i}"></div>`);
+});
+const fitOf = (a, b, i) => { const diff = Math.abs(a - b); return mmode === "complement" && COMP6.has(DIMS6[i].k) ? diff : 1 - diff; };
+const side = (v, i) => DIMS6[i].you[v >= .5 ? 1 : 0];
+function rankCast() {
+  return CAST.map((c) => {
+    const fits = c.d.map((v, i) => fitOf(me[i], v, i));
+    return { ...c, fits, score: Math.round(100 * fits.reduce((s, f) => s + f, 0) / fits.length) };
+  }).sort((a, b) => b.score - a.score);
+}
+// radar
+const R = 100, radar = document.getElementById("radar");
+const pt = (i, v) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / DIMS6.length; return [Math.cos(a) * R * v, Math.sin(a) * R * v]; };
+const poly = (vals) => vals.map((v, i) => pt(i, .08 + .92 * v).map((n) => n.toFixed(1)).join(",")).join(" ");
+radar.innerHTML = [.25, .5, .75, 1].map((s) => `<polygon class="grid" points="${poly(DIMS6.map(() => s))}"/>`).join("") +
+  DIMS6.map((d, i) => { const [x, y] = pt(i, 1); const [tx, ty] = pt(i, 1.2); return `<line class="ax" x1="0" y1="0" x2="${x}" y2="${y}"/><text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="middle">${d.k.replace("_size", "").replace("_", " ")}</text>`; }).join("") +
+  `<polygon class="them" id="rThem"/><polygon class="me" id="rMe"/>`;
+const rMe = document.getElementById("rMe"), rThem = document.getElementById("rThem");
+let shownMe = me.slice(), shownThem = me.slice(), targetThem = me.slice(), shownScore = 0;
+function renderMatch() {
+  const ranked = rankCast(), top = ranked[0];
+  targetThem = top.d;
+  document.getElementById("tLf").textContent = top.lf;
+  document.getElementById("tH").textContent = top.h;
+  document.getElementById("tHl").textContent = top.hl;
+  const order = top.fits.map((f, i) => [f, i]).sort((a, b) => b[0] - a[0]);
+  const [, bi] = order[0], [, wi] = order[order.length - 1];
+  const comp = mmode === "complement" && COMP6.has(DIMS6[bi].k);
+  document.getElementById("why").innerHTML = comp
+    ? `<b>why you'd click:</b> you ${side(me[bi], bi)}, they ${side(top.d[bi], bi)}. division of labour.`
+    : `<b>why you'd click:</b> you both ${side((me[bi] + top.d[bi]) / 2, bi)}.`;
+  document.getElementById("clash").innerHTML = `<b>where you'd clash:</b> you ${side(me[wi], wi)}; they ${side(top.d[wi], wi)}.`;
+  document.getElementById("rest").innerHTML = ranked.slice(1, 4).map((r) => `<div class="r"><span>${r.h}</span><i><u style="width:${r.score}%"></u></i><span>${r.score}</span></div>`).join("");
+  const target = top.score, from = shownScore, t0 = performance.now();
+  (function step(t) { const k = Math.min(1, (t - t0) / 500); shownScore = Math.round(from + (target - from) * (1 - Math.pow(1 - k, 3))); document.getElementById("tScore").textContent = shownScore; if (k < 1) requestAnimationFrame(step); })(t0);
+}
+(function animateRadar() {
+  shownMe = shownMe.map((v, i) => v + (me[i] - v) * .18); shownThem = shownThem.map((v, i) => v + (targetThem[i] - v) * .12);
+  rMe.setAttribute("points", poly(shownMe)); rThem.setAttribute("points", poly(shownThem));
+  requestAnimationFrame(animateRadar);
+})();
+slidersEl.addEventListener("input", (e) => {
+  const i = +e.target.dataset.i; me[i] = e.target.value / 100;
+  e.target.style.setProperty("--p", e.target.value + "%"); renderMatch();
+});
+slidersEl.querySelectorAll("input").forEach((s) => s.style.setProperty("--p", s.value + "%"));
 document.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => {
-  if (b.dataset.mode !== "shuffle") { mode = b.dataset.mode; document.querySelectorAll(".mode").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
-  newPair(); renderDims();
+  if (b.dataset.mode === "random") {
+    slidersEl.querySelectorAll("input").forEach((s, i) => { s.value = Math.round(Math.random() * 100); me[i] = s.value / 100; s.style.setProperty("--p", s.value + "%"); });
+  } else { mmode = b.dataset.mode; document.querySelectorAll('.mode:not([data-mode="random"])').forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
+  renderMatch();
 }));
-newPair(); requestAnimationFrame(renderDims);
+renderMatch();
 
 /* ---------------- handle slot machine ---------------- */
 const GLOSS = { kiasu: "afraid of losing out", kiasi: "afraid of dying", bojio: "didn't invite you", shiok: "deeply satisfying", paiseh: "embarrassed", sian: "bored to death", kancheong: "flustered", cincai: "whatever, anyhow", kaypoh: "nosy", atas: "fancy", lansi: "show-offy", jialat: "terrible", suay: "unlucky", garang: "fierce", comel: "cute", rajin: "hardworking", malas: "lazy", manja: "clingy", santai: "chill", mager: "too lazy to move", sabai: "relaxed", sanuk: "fun", kilig: "butterflies", gigil: "too cute to handle" };
