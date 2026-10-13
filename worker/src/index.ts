@@ -297,6 +297,7 @@ import AGENTS_MD from "./agents.md";
 import LANDING_HTML from "./landing.html";
 import JOIN_HTML from "./join.html";
 import PROMPT_MD from "./prompt.md";
+import qrcode from "qrcode-generator";
 
 // JSON for inline <script>; escape "<" so nothing in it can close the script tag.
 const inlineJson = (v: unknown) => JSON.stringify(v).replace(/</g, "\\u003c");
@@ -332,6 +333,18 @@ function zipOne(name: string, text: string): Uint8Array {
   return out;
 }
 const SKILL_ZIP = zipOne("slopmatch/SKILL.md", SKILL_MD);
+
+/** QR for this site's own /join page (never arbitrary input), dark on light so every phone camera reads it. */
+function qrSvg(text: string) {
+  const qr = qrcode(0, "M");
+  qr.addData(text);
+  qr.make();
+  const n = qr.getModuleCount(), pad = 2;
+  let d = "";
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c + pad} ${r + pad}h1v1h-1z`;
+  const size = n + pad * 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#f4f1ea"/><path d="${d}" fill="#0a0a0f"/></svg>`;
+}
 
 function markdown(url: URL) {
   return new Response(AGENTS_MD.replaceAll("__BASE__", url.origin), {
@@ -452,6 +465,9 @@ export default {
         });
       }
       if (p === "/llms.txt" || p === "/index.md") return markdown(url);
+      if (p === "/qr.svg") {
+        return new Response(qrSvg(`${url.origin}/join`), { headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=3600" } });
+      }
       if (p === "/prompt") return new Response(PROMPT_MD, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=60" } });
       if (p === "/join") return new Response(JOIN, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60" } });
       if (p === "/skill/slopmatch.zip") {
@@ -485,6 +501,10 @@ const ROOM_PAGE = /* html */ `<!doctype html>
   header { max-width:1200px; margin:0 auto 24px; display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap }
   h1 { margin:0; font-size:clamp(28px,5vw,48px); letter-spacing:-.02em } h1 span { color:var(--accent) }
   .count { color:var(--muted); font-size:18px }
+  .qr { display:flex; align-items:center; gap:14px; text-decoration:none; color:var(--muted); font-size:15px; line-height:1.3 }
+  .qr img { width:clamp(132px, 14vw, 220px); height:auto; aspect-ratio:1; border-radius:12px; display:block }
+  .qr b { color:var(--ink) }
+  @media (max-width: 700px), (hover: none) { .qr { display:none } }
   .pairs { max-width:1200px; margin:0 auto 24px; display:flex; flex-wrap:wrap; gap:10px }
   .pair { background:var(--accent); color:#1a0d08; font-weight:700; padding:8px 14px; border-radius:999px }
   .grid { max-width:1200px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px }
@@ -494,7 +514,7 @@ const ROOM_PAGE = /* html */ `<!doctype html>
   .lf { font-size:12px; color:var(--accent); text-transform:uppercase; letter-spacing:.06em }
   @keyframes in { from { opacity:0; transform:translateY(6px) } }
 </style></head><body>
-<header><h1>slop<span>match</span> · <span id="room"></span></h1><div class="count" id="count"></div></header>
+<header><h1>slop<span>match</span> · <span id="room"></span></h1><div class="count" id="count"></div><a class="qr" href="/join"><img src="/qr.svg" alt="QR code to join slopmatch"><span>scan to join<br><b>slopmatch.lol/join</b></span></a></header>
 <div class="pairs" id="pairs"></div>
 <div class="grid" id="grid"></div>
 <script>

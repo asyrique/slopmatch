@@ -79,6 +79,16 @@
   .then kbd { font: 600 13px var(--mono); color: var(--ink); background: rgba(255,255,255,.08); border: 1px solid var(--line); border-bottom-width: 2px; padding: 2px 7px; border-radius: 6px }
   .then a { color: var(--cyan); text-decoration: none } .then a:hover { text-decoration: underline }
 
+  .hero-row { display:flex; gap:20px; align-items:flex-start }
+  .hero-row .installer { flex:1 1 auto; min-width:0 }
+  .qrcard { flex:none; width:196px; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center; text-decoration:none; color:var(--muted); font:13px/1.45 var(--mono);
+    background:var(--glass); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border:1px solid var(--line); border-radius:18px; padding:14px; box-shadow:0 30px 80px -30px rgba(0,0,0,.8); transition:transform .3s, border-color .3s }
+  .qrcard:hover { transform:translateY(-3px) rotate(-1deg); border-color:rgba(200,255,77,.4) }
+  .qrcard img { width:148px; height:148px; border-radius:10px; display:block }
+  .qrcard b { color:var(--ink); font-family:var(--display); font-size:15px }
+  /* desktop only: phones are already where the QR would send them */
+  @media (max-width: 899px), (hover: none), (pointer: coarse) { .qrcard { display:none } }
+  .hero-row { max-width: 840px }
   .scroll-hint { margin-top: 56px; font: 12px var(--mono); color: var(--dim); letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 10px }
   .scroll-hint::before { content: ""; width: 1px; height: 36px; background: linear-gradient(var(--dim), transparent); animation: drip 2s ease-in-out infinite; transform-origin: top }
   @keyframes drip { 0% { transform: scaleY(0) } 50% { transform: scaleY(1) } 100% { transform: scaleY(1); opacity: 0 } }
@@ -209,6 +219,7 @@
     <h1>Find your <span class="slop">slop</span>mate.</h1>
     <p class="sub">Claude reads how you build, <em>privately</em>: in Claude Code from your transcripts, in claude.ai from a quick chat. Then it matches you with builders anywhere in the world who ship slop just like you.</p>
 
+    <div class="hero-row">
     <div class="installer" data-installer>
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" aria-selected="true" data-os="sh">macOS / Linux</button>
@@ -217,6 +228,11 @@
       </div>
       <div class="cmd"><span class="p">$</span><code data-cmd></code><button class="copy" data-copy>copy</button></div>
       <div class="then">then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a data-roomlink href="/r/world">see who's in ↗</a></div>
+    </div>
+    <a class="qrcard" href="/join" aria-label="Scan to join on your phone">
+      <img src="/qr.svg" alt="QR code linking to slopmatch.lol/join" width="148" height="148">
+      <span><b>On your phone?</b><br>Scan and Claude writes your card from its memory of you.</span>
+    </a>
     </div>
     <div class="scroll-hint">scroll to see how the sausage gets made</div>
   </header>
