@@ -546,7 +546,7 @@ function previewText(profile) {
 }
 
 // src/cli.ts
-var VERSION = "0.3.0";
+var VERSION = "0.4.0";
 var DEFAULT_URL = "https://slopmatch.lol";
 var DEFAULT_ROOM = "world";
 var DIMS = [
@@ -573,6 +573,7 @@ Server (default https://slopmatch.lol, room "world": everyone, worldwide):
   slopmatch matches [--mode similar|complement] [--limit 3]
   slopmatch reveal <handle> --contact "telegram @me"
   slopmatch status
+  slopmatch profile                              your profile + private link to it on the web
   slopmatch delete --yes
 
 Global: --url, --room override config. Env: SLOPMATCH_URL, SLOPMATCH_ROOM, SLOPMATCH_HOME.`;
@@ -654,6 +655,9 @@ function identity() {
     die("You haven't published a profile in this room yet. Run: slopmatch publish");
   return { ...t, ident };
 }
+
+class StaleKey extends Error {
+}
 async function call(method, url, path, body, token) {
   let res;
   try {
@@ -671,6 +675,8 @@ async function call(method, url, path, body, token) {
     die(`Could not reach ${url}: ${e.message}`);
   }
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && token)
+    throw new StaleKey(data.error || "unknown or missing token");
   if (!res.ok)
     die(`Server returned ${res.status}: ${data.error || res.statusText}`);
   return data;
@@ -808,7 +814,14 @@ Show this to the user. Re-run with --yes only after they approve.`);
     return;
   }
   const ident = t.cfg.identities?.[t.key];
-  const res = await call("POST", t.url, "/api/profiles", payload, ident?.token);
+  let res;
+  try {
+    res = await call("POST", t.url, "/api/profiles", payload, ident?.token);
+  } catch (e) {
+    if (!(e instanceof StaleKey))
+      throw e;
+    res = await call("POST", t.url, "/api/profiles", payload);
+  }
   if (res.token) {
     t.cfg.identities = { ...t.cfg.identities || {}, [t.key]: { handle: res.handle, token: res.token } };
     saveConfig(t.cfg);
@@ -835,6 +848,11 @@ async function cmdStatus() {
   const { url, ident } = identity();
   out(await call("GET", url, "/api/reveals", undefined, ident.token));
 }
+async function cmdProfile() {
+  const { url, ident } = identity();
+  const p = await call("GET", url, "/api/profiles", undefined, ident.token);
+  out({ ...p, passphrase: ident.token, page: `${url}/me#k=${ident.token}`, note: "The passphrase and link work like a password: anyone with them can manage your profile. Don't share them. On another device, type the passphrase at " + `${url}/me` + "." });
+}
 async function cmdDelete() {
   const t = identity();
   if (!v.yes)
@@ -852,6 +870,7 @@ var commands = {
   matches: cmdMatches,
   reveal: cmdReveal,
   status: cmdStatus,
+  profile: cmdProfile,
   delete: cmdDelete
 };
 if (v.version)
@@ -864,5 +883,11 @@ else {
     die(`Unknown command: ${positionals[0]}
 
 ${HELP}`);
-  await fn();
+  try {
+    await fn();
+  } catch (e) {
+    if (e instanceof StaleKey)
+      die("Your saved profile key isn't accepted any more (deleted, or an old-format key). Run: slopmatch publish");
+    throw e;
+  }
 }

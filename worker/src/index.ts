@@ -6,6 +6,10 @@
 export interface Env {
   DB: D1Database;
   BIN: R2Bucket;
+  WRITES: RateLimit;
+  READS: RateLimit;
+  SIGNUPS: RateLimit;
+  AUTHFAIL: RateLimit;
 }
 
 const BINARIES = new Set([
@@ -74,9 +78,50 @@ async function sha256(s: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * Login credential for new profiles: a four-word passphrase (256 words, one random byte each = 32 bits), e.g.
+ * "kopi-otter-mango-comet". Easy to type on another device. 32 bits is only safe because failed logins are
+ * limited per IP (AUTHFAIL, then a 60s block), see failedAuth(). Only its sha256 is stored.
+ */
+const PASS_WORDS = [
+  "kopi", "teh", "milo", "laksa", "satay", "roti", "prata", "kaya", "durian", "mango", "rambutan", "mangosteen",
+  "lychee", "pandan", "sago", "tofu", "mee", "rice", "noodle", "dumpling", "bun", "curry", "chili", "lime", "ginger",
+  "garlic", "lemongrass", "coconut", "papaya", "guava", "banana", "jackfruit", "otter", "tapir", "dugong", "gibbon",
+  "hornbill", "kancil", "tarsier", "pangolin", "sunbear", "komodo", "gecko", "heron", "egret", "kingfisher", "myna",
+  "peacock", "turtle", "squid", "crab", "prawn", "clam", "oyster", "starfish", "jellyfish", "dolphin", "whale",
+  "shark", "manta", "seahorse", "mudskipper", "puffer", "koi", "river", "ocean", "island", "beach", "reef", "lagoon",
+  "harbour", "jetty", "bridge", "tower", "temple", "market", "hawker", "kampung", "village", "garden", "jungle",
+  "forest", "mangrove", "orchid", "lotus", "hibiscus", "bamboo", "fern", "banyan", "monsoon", "thunder", "rainbow",
+  "sunset", "sunrise", "moon", "comet", "planet", "rocket", "galaxy", "nebula", "meteor", "orbit", "star", "cloud",
+  "breeze", "storm", "drizzle", "puddle", "pebble", "boulder", "canyon", "pixel", "laptop", "keyboard", "cursor",
+  "widget", "module", "kernel", "socket", "packet", "buffer", "cache", "shell", "script", "compiler", "linter",
+  "syntax", "lambda", "vector", "matrix", "tensor", "gradient", "prompt", "token", "agent", "skill", "plugin",
+  "branch", "commit", "merge", "rebase", "deploy", "lantern", "kite", "drum", "flute", "gong", "bell", "compass",
+  "anchor", "sail", "paddle", "oar", "map", "scroll", "ink", "brush", "canvas", "pencil", "eraser", "notebook",
+  "stamp", "ticket", "parcel", "basket", "bucket", "ladder", "rope", "lamp", "candle", "mirror", "window", "door",
+  "tiger", "lion", "panda", "koala", "zebra", "camel", "llama", "alpaca", "hamster", "rabbit", "squirrel", "badger",
+  "beaver", "walrus", "penguin", "puffin", "falcon", "owl", "raven", "parrot", "toucan", "flamingo", "pelican",
+  "swan", "goose", "duck", "robin", "sparrow", "wren", "finch", "lark", "violet", "amber", "jade", "ruby", "coral",
+  "ivory", "indigo", "crimson", "cobalt", "saffron", "teal", "olive", "maroon", "silver", "golden", "bronze",
+  "apple", "cherry", "peach", "plum", "pear", "melon", "grape", "berry", "kiwi", "fig", "date", "walnut", "almond",
+  "cashew", "peanut", "waffle", "pancake", "muffin", "cookie", "biscuit", "toast", "bagel", "pretzel", "soup",
+  "salad", "pizza", "taco", "burrito", "sushi", "ramen", "mochi", "kueh", "chendol", "ondeh", "rojak", "popiah",
+];
+const TOKEN_RE = /^[a-z]+(?:-[a-z]+){3}$/;
 function randomToken(): string {
-  const b = crypto.getRandomValues(new Uint8Array(32));
-  return [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  return [...crypto.getRandomValues(new Uint8Array(4))].map((b) => PASS_WORDS[b]).join("-");
+}
+
+// Guessing sends a different passphrase every time, so per-token limits never trip for an attacker.
+// Count failed logins per IP instead; past AUTHFAIL's budget the IP is blocked for a minute (per isolate).
+const authBlockedUntil = new Map<string, number>();
+const authBlocked = (ip: string) => (authBlockedUntil.get(ip) ?? 0) > Date.now();
+async function failedAuth(ip: string, env: Env) {
+  const { success } = await env.AUTHFAIL.limit({ key: "ip:" + ip });
+  if (!success) {
+    authBlockedUntil.set(ip, Date.now() + 60_000);
+    if (authBlockedUntil.size > 10_000) authBlockedUntil.clear(); // bound memory under a flood
+  }
 }
 
 async function readJson(req: Request): Promise<any> {
@@ -87,8 +132,8 @@ async function readJson(req: Request): Promise<any> {
 
 async function auth(req: Request, env: Env): Promise<ProfileRow | null> {
   const h = req.headers.get("authorization") || "";
-  const m = h.match(/^Bearer ([a-f0-9]{64})$/);
-  if (!m) return null;
+  const m = h.match(/^Bearer (.+)$/);
+  if (!m || !TOKEN_RE.test(m[1])) return null;
   return env.DB.prepare("SELECT id, room, handle, dims, card FROM profiles WHERE token_hash = ?")
     .bind(await sha256(m[1])).first<ProfileRow>();
 }
@@ -169,6 +214,8 @@ async function upsertProfile(req: Request, env: Env) {
   const card = cleanCard(body.card);
   const now = Date.now();
   const me = await auth(req, env);
+  // a wrong key must fail (and count as a failed login), not quietly create a new profile
+  if (!me && req.headers.get("authorization")) throw new HttpError(401, "unknown or missing token");
 
   if (me) {
     if (me.room !== room) throw new HttpError(400, "token belongs to a different room");
@@ -180,10 +227,11 @@ async function upsertProfile(req: Request, env: Env) {
   const token = randomToken();
   const id = crypto.randomUUID();
   const tokenHash = await sha256(token);
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const r = crypto.getRandomValues(new Uint8Array(3));
+  // 1,152 bare handles fill up in a global pool, so after 4 collisions add a number (0-999: ~1.15M handles)
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const r = crypto.getRandomValues(new Uint16Array(3));
     let handle = `${ADJ[r[0] % ADJ.length]}-${ANIMAL[r[1] % ANIMAL.length]}`;
-    if (attempt >= 4) handle += `-${r[2] % 100}`;
+    if (attempt >= 4) handle += `-${r[2] % 1000}`;
     try {
       await env.DB.prepare(
         "INSERT INTO profiles (id, room, handle, token_hash, dims, card, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -196,6 +244,25 @@ async function upsertProfile(req: Request, env: Env) {
   throw new HttpError(503, "could not allocate a handle, try again");
 }
 
+// ---------------------------------------------------------------- candidate pool cache
+// Every /api/matches call used to read the whole room from D1. Under a spike that's N rows per call, so each
+// isolate keeps the newest POOL_MAX profiles (already parsed) for POOL_TTL_MS and scores against that.
+// New or deleted profiles show up in other people's matches within the TTL.
+const POOL_TTL_MS = 15_000, POOL_MAX = 5000;
+type PoolRow = { id: string; handle: string; dims: Dims; card: Card };
+const poolCache = new Map<string, { at: number; rows: Promise<PoolRow[]> }>();
+function candidatePool(room: string, env: Env): Promise<PoolRow[]> {
+  const hit = poolCache.get(room);
+  if (hit && Date.now() - hit.at < POOL_TTL_MS) return hit.rows;
+  const rows = env.DB.prepare("SELECT id, handle, dims, card FROM profiles WHERE room = ? ORDER BY updated_at DESC LIMIT ?")
+    .bind(room, POOL_MAX).all<{ id: string; handle: string; dims: string; card: string }>()
+    .then(({ results }) => results.map((r) => ({ id: r.id, handle: r.handle, dims: JSON.parse(r.dims) as Dims, card: JSON.parse(r.card) as Card })));
+  // share one in-flight query between concurrent requests; drop it on failure so the next call retries
+  poolCache.set(room, { at: Date.now(), rows });
+  rows.catch(() => poolCache.delete(room));
+  return rows;
+}
+
 async function matches(req: Request, env: Env) {
   const me = await requireAuth(req, env);
   const url = new URL(req.url);
@@ -204,17 +271,13 @@ async function matches(req: Request, env: Env) {
   const mode = url.searchParams.get("mode") === "complement" ? "complement"
     : url.searchParams.get("mode") === "similar" ? "similar" : mine.card.mode;
 
-  const { results } = await env.DB.prepare("SELECT id, room, handle, dims, card FROM profiles WHERE room = ? AND id != ?")
-    .bind(me.room, me.id).all<ProfileRow>();
+  const results = (await candidatePool(me.room, env)).filter((r) => r.id !== me.id);
   const { results: outgoing } = await env.DB.prepare("SELECT to_id FROM reveals WHERE from_id = ?")
     .bind(me.id).all<{ to_id: string }>();
   const revealed = new Set(outgoing.map((r) => r.to_id));
 
   const ranked = results
-    .map((r) => {
-      const them = parse(r);
-      return { handle: r.handle, ...score(mine, them, mode), card: them.card, you_revealed: revealed.has(r.id) };
-    })
+    .map((r) => ({ handle: r.handle, ...score(mine, r, mode), card: r.card, you_revealed: revealed.has(r.id) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
@@ -257,6 +320,13 @@ async function revealStatus(req: Request, env: Env) {
   return json({ you: me.handle, mutual: results, waiting_on_them: (pending?.n ?? 0) - results.length });
 }
 
+/** Your own profile, for the /me page and `slopmatch profile`. */
+async function getProfile(req: Request, env: Env) {
+  const me = await requireAuth(req, env);
+  const { dims, card } = parse(me);
+  return json({ handle: me.handle, room: me.room, dims, card });
+}
+
 async function deleteProfile(req: Request, env: Env) {
   const me = await requireAuth(req, env);
   await env.DB.batch([
@@ -264,6 +334,18 @@ async function deleteProfile(req: Request, env: Env) {
     env.DB.prepare("DELETE FROM profiles WHERE id = ?").bind(me.id),
   ]);
   return json({ deleted: true });
+}
+
+/** Every open landing page and projector polls this, so serve it from the edge cache for 10s. */
+async function cachedRoomData(room: string, url: URL, env: Env, ctx: ExecutionContext) {
+  const cache = caches.default, key = new Request(`${url.origin}/api/room/${encodeURIComponent(room)}`);
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  const fresh = await roomData(room, env);
+  const res = new Response(fresh.body, fresh);
+  res.headers.set("cache-control", "public, max-age=10");
+  ctx.waitUntil(cache.put(key, res.clone()));
+  return res;
 }
 
 /** Public, projector-friendly view: pseudonyms, headlines, mutual pairs. No contacts, no scores. */
@@ -308,6 +390,7 @@ const SKILL_MD = PLUGIN_SKILL_MD.replace(/^name: me$/m, "name: slopmatch");
 const inlineJson = (v: unknown) => JSON.stringify(v).replace(/</g, "\\u003c");
 const LANDING = LANDING_HTML.replace("__HANDLE_WORDS__", inlineJson({ adj: ADJ, animal: ANIMAL })).replace("__PROMPT__", inlineJson(PROMPT_MD));
 const JOIN = JOIN_HTML.replace("__PROMPT__", inlineJson(PROMPT_MD));
+const landingByOrigin = new Map<string, string>();
 
 /** Browsers get the landing page; curl, agents and anything asking for markdown get install instructions. */
 function wantsHtml(req: Request) {
@@ -453,17 +536,34 @@ Write-Host "Next: start a new agent session and run /slopmatch"
 
 // ---------------------------------------------------------------- router
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     const p = url.pathname.replace(/\/+$/, "") || "/";
+    const bearer = (req.headers.get("authorization") || "").match(/^Bearer (.+)$/)?.[1];
+    const ip = req.headers.get("cf-connecting-ip") || "unknown";
     try {
+      if (p.startsWith("/api/") && p !== "/api/room" && !p.startsWith("/api/room/")) {
+        if (bearer && authBlocked(ip)) throw new HttpError(429, "too many wrong passphrases from here, try again in a minute");
+        // Key by the user's token when there is one: at an event everyone shares the venue's IP, so per-IP write
+        // limits would throttle the whole room. Anonymous writes (new sign-ups) get a generous per-IP allowance.
+        const key = bearer && TOKEN_RE.test(bearer) ? "t:" + (await sha256(bearer)).slice(0, 24) : "ip:" + ip;
+        const limiter = req.method === "GET" ? env.READS : key.startsWith("t:") ? env.WRITES : env.SIGNUPS;
+        const { success } = await limiter.limit({ key });
+        if (!success) throw new HttpError(429, "slow down: too many requests, try again in a minute");
+      }
+      if (p === "/api/profiles" && req.method === "GET") return await getProfile(req, env);
+      if (p === "/api/qr" && req.method === "POST") {
+        const text = str((await readJson(req)).text, 300);
+        if (!text.startsWith(`${url.origin}/me#k=`)) throw new HttpError(400, "only private profile links");
+        return new Response(qrSvg(text), { headers: { "content-type": "image/svg+xml", "cache-control": "no-store" } });
+      }
       if (p === "/api/profiles" && req.method === "POST") return await upsertProfile(req, env);
       if (p === "/api/profiles" && req.method === "DELETE") return await deleteProfile(req, env);
       if (p === "/api/matches" && req.method === "GET") return await matches(req, env);
       if (p === "/api/reveals" && req.method === "POST") return await reveal(req, env);
       if (p === "/api/reveals" && req.method === "GET") return await revealStatus(req, env);
       let m = p.match(/^\/api\/room\/([^/]+)$/);
-      if (m && req.method === "GET") return await roomData(decodeURIComponent(m[1]), env);
+      if (m && req.method === "GET") return await cachedRoomData(decodeURIComponent(m[1]), url, env, ctx);
       m = p.match(/^\/r\/([^/]+)$/);
       if (m && req.method === "GET") return new Response(ROOM_PAGE, { headers: { "content-type": "text/html; charset=utf-8" } });
       m = p.match(/^\/dl\/([^/]+)$/);
@@ -479,7 +579,7 @@ export default {
         return new Response(qrSvg(`${url.origin}/join`), { headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=3600" } });
       }
       if (p === "/prompt") return new Response(PROMPT_MD, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=60" } });
-      if (p === "/join") return new Response(JOIN, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60" } });
+      if (p === "/join" || p === "/me") return new Response(JOIN, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60" } });
       if (p === "/skill/slopmatch.zip") {
         return new Response(SKILL_ZIP, {
           headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="slopmatch.zip"', "cache-control": "public, max-age=60" },
@@ -487,13 +587,18 @@ export default {
       }
       if (p === "/") {
         if (!wantsHtml(req)) return markdown(url);
-        return new Response(LANDING.replace("__QR_SVG__", qrSvg(`${url.origin}/join`, { live: true })), {
+        let page = landingByOrigin.get(url.origin);
+        if (!page) landingByOrigin.set(url.origin, (page = LANDING.replace("__QR_SVG__", qrSvg(`${url.origin}/join`, { live: true }))));
+        return new Response(page, {
           headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60", vary: "Accept, User-Agent" },
         });
       }
       return err(404, "not found");
     } catch (e) {
-      if (e instanceof HttpError) return err(e.status, e.message);
+      if (e instanceof HttpError) {
+        if (e.status === 401 && bearer) await failedAuth(ip, env);
+        return err(e.status, e.message);
+      }
       console.error(e);
       return err(500, "internal error");
     }
@@ -543,5 +648,5 @@ async function tick() {
       esc(p.headline) + "</div>" + p.topics.map((t) => '<span class="t">' + esc(t) + "</span>").join("") + "</div>").join("");
   } catch (e) {}
 }
-tick(); setInterval(tick, 4000);
+tick(); setInterval(tick, 6000);
 </script></body></html>`;

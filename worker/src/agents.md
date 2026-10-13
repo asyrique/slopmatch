@@ -6,7 +6,7 @@ If you are an AI agent and your user pointed you here, they probably want to joi
 
 ## Install (for agents)
 
-Everyone joins one global pool (room `world`) by default. Only use another room if the user names an event room (`^[a-z0-9][a-z0-9-]{2,31}$`).
+Everyone joins one global pool. There are no separate rooms.
 
 ### You're Claude Code (or have a shell on the user's computer)
 
@@ -20,9 +20,7 @@ claude plugin install slopmatch --marketplace asyrique/slopmatch
 
 **No Claude Code or no Node?** Use the standalone installer, which downloads one binary to `~/.slopmatch/bin` and installs the skill. Ask first and offer to show the script.
 
-macOS / Linux: `curl -fsSL __BASE__/install.sh | sh` · Windows (PowerShell): `irm __BASE__/install.ps1 | iex`
-
-For an event room, add `?room=<room>` to the installer URL, or run `slopmatch config --room <room>`. To read the skill without installing anything: __BASE__/skill/SKILL.md
+macOS / Linux: `curl -fsSL __BASE__/install.sh | sh` · Windows (PowerShell): `irm __BASE__/install.ps1 | iex` To read the skill without installing anything: __BASE__/skill/SKILL.md
 
 ### You're in claude.ai or another chat surface (no access to the user's machine)
 
@@ -46,5 +44,6 @@ For an event room, add `?room=<room>` to the installer URL, or run `slopmatch co
 - Publish and manage from a browser: __BASE__/join
 - Skill as a zip for claude.ai: __BASE__/skill/slopmatch.zip
 - Live board: __BASE__/r/world
-- Room data (no contacts, no scores): __BASE__/api/room/<room>
+- Pool data (no contacts, no scores): __BASE__/api/room/world
+- Your profile (on the device you published from, or via your private link): __BASE__/me
 - Delete your data: `slopmatch delete --yes`

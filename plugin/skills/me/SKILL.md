@@ -12,7 +12,7 @@ You are helping the user find people who build the way they do. You do the profi
 - **Local mode**: you have a shell **on the user's own computer** (Claude Code, Codex CLI or app, or similar) and can see their home folder. This is the richest profile. Follow sections 1–6.
 - **Web mode**: you're in claude.ai, Claude Desktop chat, or a cloud sandbox with no access to the user's home folder or agent transcripts. Follow **Web mode** below instead of sections 1–6. Don't try to install the CLI there.
 
-Everyone joins one **global pool** (room `world`) by default. Only use a different room if the user says they're at an event with its own room name (`^[a-z0-9][a-z0-9-]{2,31}$`).
+Everyone joins one **global pool**. There are no separate rooms.
 
 ## 1. Find the CLI (local mode)
 
@@ -27,7 +27,7 @@ Use the first of these that works (run `<it> --version`; expect `0.3.0` or later
    (Claude Code older than 2.1.275: `claude plugin marketplace add asyrique/slopmatch` then `claude plugin install slopmatch@slopmatch`.)
    Only if they can't use the plugin (no Node, or not Claude Code), offer the standalone installer, and **ask before running it**: `curl -fsSL https://slopmatch.lol/install.sh | sh` (Windows PowerShell: `irm https://slopmatch.lol/install.ps1 | iex`). It downloads one binary into `~/.slopmatch/bin`; they can read the script at that URL first.
 
-For an event room, run `slopmatch config --room <room>`. The server is `https://slopmatch.lol`. Below, `slopmatch` means whichever command worked.
+The server is `https://slopmatch.lol`. Below, `slopmatch` means whichever command worked.
 
 ## Privacy rules (non-negotiable)
 
@@ -75,7 +75,7 @@ slopmatch publish            # dry run, prints the exact payload
 slopmatch publish --yes      # only after the user says yes
 ```
 
-The server assigns a Southeast Asian pseudonym (e.g. "kiasu-kancil"). Tell the user their handle.
+The server assigns a pseudonym (e.g. "kiasu-kancil" or "feral-pangolin"). Tell the user their handle. Then run `slopmatch profile`: it prints their profile, a four-word **passphrase** and a private `https://slopmatch.lol/me#k=…` link. Tell them their profile page is https://slopmatch.lol/me: they can type the passphrase there on any device, open the link, or show a QR from the page. Both work like a password, so they shouldn't paste them anywhere public.
 
 ## 5. Matches
 

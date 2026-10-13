@@ -48,6 +48,13 @@
   .err { color:var(--pink); font:13px var(--mono); margin-top:12px; white-space:pre-wrap }
   .ok { color:var(--lime) }
   .handle { font:800 clamp(30px,6vw,46px)/1 var(--display); letter-spacing:-.04em; color:var(--lime); margin:4px 0 6px }
+  .phrase { font: 700 clamp(18px,3.2vw,26px)/1.3 var(--mono); color: var(--lime); letter-spacing: .01em; word-break: break-word }
+  #keyQr svg { width:100%; height:auto; border-radius:12px; display:block }
+  .dimbars { display:grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin-top: 14px }
+  @media (max-width: 560px) { .dimbars { grid-template-columns: 1fr } }
+  .db { display:grid; grid-template-columns: 112px 1fr 30px; gap: 10px; align-items:center; font: 12px var(--mono); color: var(--muted) }
+  .db i { height: 8px; border-radius: 99px; background: rgba(255,255,255,.06); overflow:hidden; display:block }
+  .db i u { display:block; height:100%; background: linear-gradient(90deg, var(--accent), var(--pink)); border-radius: 99px }
   .match { display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:start }
   .score { font:800 40px/1 var(--display); letter-spacing:-.04em; color:var(--lime); min-width:64px }
   .score small { display:block; font:11px var(--mono); color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-top:4px }
@@ -76,6 +83,14 @@
   <section id="vPaste" hidden>
     <h1>Join from <span>anywhere</span>.</h1>
     <p class="lede">Claude already knows how you build. Ask it, tap the link it gives you, check the card, publish. Works on your phone.</p>
+    <div class="card" id="restoreCard">
+      <div class="k">Already in? Get back to your profile</div>
+      <div class="row" style="margin-top:0">
+        <input type="text" id="phrase" placeholder="your passphrase, e.g. kopi-otter-mango-comet" autocomplete="off" autocapitalize="none" spellcheck="false" style="flex:1;min-width:220px">
+        <button class="go" id="restore">Open my profile</button>
+      </div>
+      <div class="err" id="restoreErr"></div>
+    </div>
     <div class="card">
       <div class="k">Step 1 · ask Claude</div>
       <p class="note" style="margin:0 0 12px">It asks Claude to go through its memory of you and your past chats, show you a private profile, and hand you a link to a pseudonymous card. Works best with memory or past-chat search on.</p>
@@ -103,8 +118,9 @@
     <h1>This is <span>everything</span> we'd get.</h1>
     <p class="lede">Read it. Ten numbers and a short card, nothing else. Publishing gives you a random pseudonym, and you can delete it any time.</p>
     <div class="card">
-      <div class="k">Exact payload · room <span id="rvRoom"></span></div>
+      <div class="k">Exact payload<span id="rvRoom" hidden></span></div>
       <pre id="payload"></pre>
+      <div class="note ok" id="reviewNote" style="margin-top:12px"></div>
       <div class="row"><button class="go" id="publish">Publish to slopmatch</button><button class="ghost" id="cancel">Cancel</button></div>
       <div class="err" id="pubErr"></div>
     </div>
@@ -112,10 +128,26 @@
 
   <!-- 3. dashboard -->
   <section id="vDash" hidden>
-    <div class="card">
-      <div class="k">You are</div>
+    <div class="card" id="welcome" hidden><div class="note ok" id="welcomeMsg"></div></div>
+    <div class="card prof">
+      <div class="k">Your profile</div>
       <div class="handle" id="me">…</div>
-      <div class="note">in <b id="dRoom"></b> · your key lives only in this browser. Same browser, same identity.</div>
+      <div class="hl" id="pHeadline"></div>
+      <div class="st" id="pStyle"></div>
+      <div id="pTags"></div>
+      <div class="dimbars" id="pDims"></div>
+      <div class="note" id="pMeta" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <div class="k">Get back to this profile</div>
+      <p class="note" style="margin:0 0 12px">This browser remembers you. On another device, type your passphrase at <b>slopmatch.lol/me</b>, open your private link, or scan the QR. It works like a password: anyone with it can manage your profile, so keep it off the projector.</p>
+      <div class="row" style="margin-top:0"><button class="ghost" id="showKey">Show my passphrase</button><button class="go" id="copyKey" hidden>Copy private link</button><button class="ghost" id="showQr" hidden>Show QR</button></div>
+      <div id="keyBox" hidden style="margin-top:14px">
+        <div class="phrase" id="phraseOut"></div>
+        <pre id="keyLink" style="margin-top:10px;white-space:pre-wrap;word-break:break-all"></pre>
+        <div id="keyQr" hidden style="margin-top:14px;width:220px;max-width:100%"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -221,8 +253,10 @@ async function api(method, path, body, token) {
 
 /* ---- review ---- */
 let pending = null;
-function review(p) {
+function review(p, opts = {}) {
   pending = p; room = p.room;
+  $("publish").textContent = store.get(tokenKey(p.room)) ? "Update my profile" : "Publish to slopmatch";
+  $("reviewNote").textContent = opts.note || "";
   $("rvRoom").textContent = p.room;
   $("payload").textContent = JSON.stringify(p, null, 2);
   $("pubErr").textContent = "";
@@ -243,11 +277,17 @@ $("publish").onclick = async () => {
   const btn = $("publish"); btn.disabled = true; $("pubErr").textContent = "";
   try {
     const existing = store.get(tokenKey(pending.room));
-    const res = await api("POST", "/api/profiles", pending, existing);
+    let res;
+    try { res = await api("POST", "/api/profiles", pending, existing); }
+    catch (e) {
+      // the saved key no longer works (profile deleted): forget it and sign up fresh
+      if (!existing || !/unknown or missing token/.test(e.message)) throw e;
+      store.del(tokenKey(pending.room)); res = await api("POST", "/api/profiles", pending);
+    }
     if (res.token) store.set(tokenKey(pending.room), res.token);
     store.set("slopmatch:handle:" + pending.room, res.handle);
     room = pending.room; pending = null; store.set("slopmatch:room", room);
-    dashboard();
+    dashboard(res.updated ? "Profile updated." : `You're in! You are ${res.handle}. Save your passphrase (below) to get back here from any device.`);
   } catch (e) { $("pubErr").textContent = "Publish failed: " + e.message; }
   btn.disabled = false;
 };
@@ -322,10 +362,57 @@ $("delYes").onclick = async () => {
   try { await api("DELETE", "/api/profiles", null, store.get(tokenKey(room))); store.del(tokenKey(room)); store.del("slopmatch:handle:" + room); store.del("slopmatch:room"); room = "world"; start(); }
   catch (e) { $("delErr").textContent = e.message; }
 };
-function dashboard() {
-  $("dRoom").textContent = room; $("roomlink").href = "/r/" + room;
+const DIM_LABEL = { planning: "plans first", delegation_size: "delegates big", verification: "verifies", steering: "steers", exploration: "explores", verbosity: "verbose", curiosity: "curious", warmth: "warm", frustration: "frustrated", night_owl: "night owl" };
+async function loadProfile() {
+  try {
+    const d = await api("GET", "/api/profiles", null, store.get(tokenKey(room)));
+    $("me").textContent = d.handle; store.set("slopmatch:handle:" + room, d.handle);
+    $("pHeadline").textContent = d.card.headline; $("pStyle").textContent = d.card.style;
+    $("pTags").innerHTML = [d.card.looking_for, d.card.mode].map((t) => `<span class="tag c">${esc(t)}</span>`).join("") + d.card.topics.map((t) => `<span class="tag">${esc(t)}</span>`).join("") + (d.card.file_types || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("");
+    $("pDims").innerHTML = DIMS.map((k) => `<div class="db"><span>${DIM_LABEL[k]}</span><i><u style="width:${Math.round(d.dims[k] * 100)}%"></u></i><span>${Math.round(d.dims[k] * 100)}</span></div>`).join("");
+    const b = d.card.big5 || {};
+    $("pMeta").textContent = "big 5 (for fun): " + "OCEAN".split("").map((k) => `${k} ${Math.round((b[k] ?? .5) * 100)}`).join(" · ");
+    return d;
+  } catch (e) {
+    if (/unknown or missing token/.test(e.message)) { store.del(tokenKey(room)); start(); }
+    return null;
+  }
+}
+function privateLink() { return `${location.origin}/me#k=${store.get(tokenKey(room))}`; }
+$("showKey").onclick = () => {
+  const k = store.get(tokenKey(room)) || "";
+  $("phraseOut").textContent = k;
+  $("keyLink").textContent = privateLink(); $("keyBox").hidden = false;
+  $("copyKey").hidden = false; $("showQr").hidden = false; $("showKey").hidden = true;
+};
+$("copyKey").onclick = async () => { try { await navigator.clipboard.writeText(privateLink()); $("copyKey").textContent = "Copied ✓"; } catch { $("copyKey").textContent = "Select it above"; } };
+$("showQr").onclick = async () => {
+  // generated from a POST body, so the passphrase never ends up in a URL or server log
+  const r = await fetch("/api/qr", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: privateLink() }) });
+  if (r.ok) { $("keyQr").innerHTML = await r.text(); $("keyQr").hidden = false; $("showQr").hidden = true; }
+};
+// typing a passphrase on a new device
+const cleanPhrase = (s) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).join("-");
+async function restoreWith(key) {
+  const d = await api("GET", "/api/profiles", null, key);
+  room = d.room; store.set(tokenKey(room), key); store.set("slopmatch:handle:" + room, d.handle); store.set("slopmatch:room", room);
+  return d;
+}
+$("restore").onclick = async () => {
+  $("restoreErr").textContent = "";
+  const k = cleanPhrase($("phrase").value);
+  if (!k) return;
+  try { const d = await restoreWith(k); $("phrase").value = ""; dashboard(`Welcome back, ${d.handle}.`); }
+  catch (e) { $("restoreErr").textContent = /unknown or missing token|401/.test(e.message) ? "That passphrase doesn't match a profile. Check the words and try again." : e.message; }
+};
+$("phrase").addEventListener("keydown", (e) => { if (e.key === "Enter") $("restore").click(); });
+function dashboard(welcome) {
+  $("roomlink").href = "/r/" + room;
   $("me").textContent = store.get("slopmatch:handle:" + room) || "…";
-  show("vDash"); loadMatches(); loadMutual();
+  $("welcome").hidden = !welcome; if (welcome) $("welcomeMsg").textContent = welcome;
+  $("keyBox").hidden = true; $("keyQr").hidden = true; $("keyQr").innerHTML = ""; $("copyKey").hidden = true; $("showQr").hidden = true; $("showKey").hidden = false;
+  if (location.pathname !== "/me") history.replaceState(null, "", "/me");
+  show("vDash"); scrollTo(0, 0); loadProfile(); loadMatches(); loadMutual();
 }
 
 $("prompt").textContent = PROMPT;
@@ -348,22 +435,48 @@ function parseHash(h) {
 /* ---- boot ---- */
 function start() {
   $("roomlink").href = "/r/" + room;
-  if (store.get(tokenKey(room))) dashboard(); else show("vPaste");
+  if (store.get(tokenKey(room))) { dashboard(); return; }
+  show("vPaste");
+  if (location.pathname === "/me") $("restoreErr").textContent = "No profile in this browser yet. Type your passphrase above, or make a card below.";
 }
-(function boot() {
+const near = (a, b) => Math.abs(a - b) < .006;
+function sameCard(p, cur) {
+  return DIMS.every((k) => near(p.dims[k], cur.dims[k])) && p.card.headline === cur.card.headline && p.card.style === cur.card.style &&
+    p.card.looking_for === cur.card.looking_for && p.card.mode === cur.card.mode && p.card.topics.join() === cur.card.topics.join();
+}
+async function boot() {
   const h = location.hash.slice(1);
   if (h) {
-    // keep the card out of history and bookmarks once it's been read
+    // keep the card (or key) out of history and bookmarks once it's been read
     history.replaceState(null, "", location.pathname + location.search);
+    const key = new URLSearchParams(h).get("k");
+    if (key) {
+      // private link: restore this profile in this browser
+      try { const d = await restoreWith(key); dashboard(`Welcome back, ${d.handle}.`); return; } catch (e) { show("vPaste"); $("pasteErr").textContent = "That private link didn't work (" + e.message + "). It may have been deleted."; return; }
+    }
     try {
       const parsed = parseHash(h);
-      if (parsed) { review(normalize(parsed)); return; }
+      if (parsed) {
+        const p = normalize(parsed);
+        // reopening Claude's link: if this browser already published this card, go straight to the profile
+        if (store.get(tokenKey(p.room))) {
+          room = p.room;
+          const cur = await api("GET", "/api/profiles", null, store.get(tokenKey(room))).catch(() => null);
+          if (cur && sameCard(p, cur)) { dashboard(`Welcome back, ${cur.handle}. This card is already published.`); return; }
+          if (cur) { review(p, { note: `You're already in as ${cur.handle}. This card is different from your published one: publishing will update it.` }); return; }
+        }
+        review(p); return;
+      }
     } catch (e) {
       show("vPaste"); $("pasteErr").textContent = "That link's card couldn't be read (" + e.message + "). Ask Claude for a new link, or paste it below."; return;
     }
   }
   start();
-})();
+}
+boot();
+// pasting a link into an already-open tab only changes the hash; handle it the same way
+addEventListener("hashchange", () => { if (location.hash.length > 1) boot(); });
+
 </script>
 </body>
 </html>

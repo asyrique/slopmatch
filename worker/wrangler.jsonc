@@ -15,6 +15,15 @@
   ],
   // binaries served at /dl/<name>; create with: bunx wrangler r2 bucket create slopmatch-bin
   "r2_buckets": [{ "binding": "BIN", "bucket_name": "slopmatch-bin" }],
+  // API rate limits. WRITES and READS are keyed per user (by token) when signed in, else per IP.
+  // SIGNUPS covers anonymous writes per IP, set high because an event's whole room shares one IP.
+  "ratelimits": [
+    { "name": "WRITES", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
+    { "name": "READS", "namespace_id": "1002", "simple": { "limit": 240, "period": 60 } },
+    { "name": "SIGNUPS", "namespace_id": "1003", "simple": { "limit": 300, "period": 60 } },
+    // failed logins per IP: what keeps guessing a 4-word passphrase impractical
+    { "name": "AUTHFAIL", "namespace_id": "1004", "simple": { "limit": 10, "period": 60 } }
+  ],
   // the zone must be on your Cloudflare account; deploy attaches the domain and its certificate
   "routes": [{ "pattern": "slopmatch.lol", "custom_domain": true }]
 }

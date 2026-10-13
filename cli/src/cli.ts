@@ -7,7 +7,7 @@ import { homedir } from "node:os";
 import { join, resolve, relative, sep } from "node:path";
 import { buildFingerprint, previewText } from "./fingerprint";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 const DEFAULT_URL = "https://slopmatch.lol";
 /** The global pool. Private rooms (e.g. for an event) are opt-in via --room. */
 const DEFAULT_ROOM = "world";
@@ -26,6 +26,7 @@ Server (default https://slopmatch.lol, room "world": everyone, worldwide):
   slopmatch matches [--mode similar|complement] [--limit 3]
   slopmatch reveal <handle> --contact "telegram @me"
   slopmatch status
+  slopmatch profile                              your profile + private link to it on the web
   slopmatch delete --yes
 
 Global: --url, --room override config. Env: SLOPMATCH_URL, SLOPMATCH_ROOM, SLOPMATCH_HOME.`;
@@ -88,6 +89,8 @@ function identity() {
   return { ...t, ident };
 }
 
+class StaleKey extends Error {}
+
 async function call(method: string, url: string, path: string, body?: unknown, token?: string) {
   let res: Response;
   try {
@@ -104,6 +107,7 @@ async function call(method: string, url: string, path: string, body?: unknown, t
     die(`Could not reach ${url}: ${e.message}`);
   }
   const data: any = await res.json().catch(() => ({}));
+  if (res.status === 401 && token) throw new StaleKey(data.error || "unknown or missing token");
   if (!res.ok) die(`Server returned ${res.status}: ${data.error || res.statusText}`);
   return data;
 }
@@ -216,7 +220,13 @@ async function cmdPublish() {
     return;
   }
   const ident = t.cfg.identities?.[t.key];
-  const res = await call("POST", t.url, "/api/profiles", payload, ident?.token);
+  let res;
+  try { res = await call("POST", t.url, "/api/profiles", payload, ident?.token); }
+  catch (e) {
+    // saved key no longer works (profile deleted elsewhere): sign up fresh
+    if (!(e instanceof StaleKey)) throw e;
+    res = await call("POST", t.url, "/api/profiles", payload);
+  }
   if (res.token) {
     t.cfg.identities = { ...(t.cfg.identities || {}), [t.key]: { handle: res.handle, token: res.token } };
     saveConfig(t.cfg);
@@ -244,6 +254,13 @@ async function cmdStatus() {
   out(await call("GET", url, "/api/reveals", undefined, ident.token));
 }
 
+async function cmdProfile() {
+  const { url, ident } = identity();
+  const p = await call("GET", url, "/api/profiles", undefined, ident.token);
+  // The key rides in the URL fragment, which browsers never send to the server.
+  out({ ...p, passphrase: ident.token, page: `${url}/me#k=${ident.token}`, note: "The passphrase and link work like a password: anyone with them can manage your profile. Don't share them. On another device, type the passphrase at " + `${url}/me` + "." });
+}
+
 async function cmdDelete() {
   const t = identity();
   if (!v.yes) die(`This deletes '${t.ident.handle}' and its reveals from ${t.url}. Re-run with --yes.`);
@@ -256,7 +273,7 @@ async function cmdDelete() {
 // ---------------------------------------------------------------- main
 const commands: Record<string, () => unknown> = {
   extract: cmdExtract, skills: cmdSkills, config: cmdConfig, publish: cmdPublish,
-  matches: cmdMatches, reveal: cmdReveal, status: cmdStatus, delete: cmdDelete,
+  matches: cmdMatches, reveal: cmdReveal, status: cmdStatus, profile: cmdProfile, delete: cmdDelete,
 };
 
 if (v.version) out(VERSION);
@@ -264,5 +281,9 @@ else if (v.help || !positionals[0]) out(HELP);
 else {
   const fn = commands[positionals[0]];
   if (!fn) die(`Unknown command: ${positionals[0]}\n\n${HELP}`);
-  await fn();
+  try { await fn(); }
+  catch (e) {
+    if (e instanceof StaleKey) die("Your saved profile key isn't accepted any more (deleted, or an old-format key). Run: slopmatch publish");
+    throw e;
+  }
 }

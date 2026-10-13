@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   UNIQUE (room, handle)
 );
 CREATE INDEX IF NOT EXISTS idx_profiles_room ON profiles(room);
+-- the matches pool reads the newest profiles per room
+CREATE INDEX IF NOT EXISTS idx_profiles_room_updated ON profiles(room, updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS reveals (
   from_id     TEXT NOT NULL,

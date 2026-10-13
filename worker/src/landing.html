@@ -261,7 +261,7 @@
   <a class="logo" href="/"><i></i><span>slop<b>match</b></span></a>
   <div class="navlinks">
     <a href="#how">How it works</a><a href="#privacy">Privacy</a><a href="#match">Matching</a>
-    <a class="keep" id="navroom" href="/r/world">Who's in ↗</a>
+    <a class="keep" href="/me">My profile</a><a class="keep" id="navroom" href="/r/world">Who's in ↗</a>
   </div>
 </nav>
 
@@ -373,7 +373,7 @@
 </main>
 
 <footer>
-  <span>slopmatch.lol · made with slop at Claude Code Build Day, Singapore · hosting an event? add <a href="/?room=your-event">?room=your-event</a> for a private room</span>
+  <span>made with ❤️ Opus 5.5 ❤️ at Claude Community 🇸🇬 Build Day</span>
   <span><a href="/skill/SKILL.md">skill</a> · <a href="/install.sh">install.sh</a> · <a href="/install.ps1">install.ps1</a></span>
 </footer>
 
@@ -454,7 +454,8 @@ async function poll() {
         : state.room === "world" ? "the pool is open · be the first one in" : `${state.room} is open · be the first one in`;
     }
   } catch {}
-  pollTimer = setTimeout(poll, 8000);
+  // the room data is edge-cached for 10s; poll gently and not at all from background tabs
+  pollTimer = setTimeout(poll, document.hidden ? 60000 : 20000);
 }
 poll();
 
