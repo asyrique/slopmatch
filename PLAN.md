@@ -53,8 +53,9 @@ fixtures/make_fixtures.py   Generates fake transcripts (incl. planted secrets) i
 - [x] Pushed to github.com/asyrique/slopmatch (private).
 
 ### Not yet done / not verified
-- [ ] **Not deployed.** D1 `database_id` in `worker/wrangler.jsonc` is a placeholder.
-- [ ] **Never run on a real Mac or Windows machine.** Only linux-x64 was executed.
+- [x] **Deployed** to https://slopmatch.lol (2026-10-13 ~15:10 SGT). D1 `slopmatch` (45d4101d…), R2 `slopmatch-bin` with all 5 binaries. Prod smoke test passed: install → publish ×2 → matches → mutual reveal → delete.
+- [x] Skill served at `/skill/SKILL.md`; installers write it to `~/.claude/skills/slopmatch/` (+ `~/.codex`, `~/.agents` if present).
+- [x] darwin-arm64 installed and ran on a real Mac (via curl, no Gatekeeper kill). darwin-x64 and Windows still never executed.
 - [ ] `install.ps1` never executed (no PowerShell available during the build).
 - [ ] Dimension scales are hand-tuned guesses that have never seen real transcripts.
 - [ ] Only Claude Code transcripts are parsed. Codex and pi aren't.
@@ -65,12 +66,12 @@ fixtures/make_fixtures.py   Generates fake transcripts (incl. planted secrets) i
 
 1. **Deploy**
    ```bash
-   cd worker && npm install
-   npx wrangler whoami                         # make sure it's the account that owns slopmatch.lol
-   npx wrangler d1 create slopmatch            # paste database_id into wrangler.jsonc
-   npx wrangler r2 bucket create slopmatch-bin
-   npm run db:remote
-   npm run deploy                              # attaches slopmatch.lol as a custom domain
+   cd worker && bun install
+   bunx wrangler whoami                         # make sure it's the account that owns slopmatch.lol
+   bunx wrangler d1 create slopmatch            # paste database_id into wrangler.jsonc
+   bunx wrangler r2 bucket create slopmatch-bin
+   bun run db:remote
+   bun run deploy                              # attaches slopmatch.lol as a custom domain
    cd ../cli && bun install && bun run release # builds 5 binaries and uploads them to R2
    curl -sI https://slopmatch.lol/dl/slopmatch-darwin-arm64   # expect 200
    ```
@@ -108,8 +109,8 @@ bun src/cli.ts extract --path ../fixtures/projects --days 30
 npx tsc --noEmit
 
 cd ../worker && npm install && npx tsc --noEmit
-npm run db:local
-npx wrangler dev --port 8787 --local-upstream localhost:8787   # see gotcha below
+bun run db:local
+bunx wrangler dev --port 8787 --local-upstream localhost:8787   # see gotcha below
 cd ../cli && bun scripts/build.ts linux-x64 && bun scripts/release.ts --local   # or the darwin-arm64 target on a Mac
 SLOPMATCH_HOME=/tmp/u1 sh -c 'curl -fsSL "http://localhost:8787/install.sh?room=test" | sh'
 ```

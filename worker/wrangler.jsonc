@@ -10,8 +10,7 @@
     {
       "binding": "DB",
       "database_name": "slopmatch",
-      // replace after: bunx wrangler d1 create slopmatch
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "45d4101d-53c8-4270-8557-f10d281ec21c"
     }
   ],
   // binaries served at /dl/<name>; create with: bunx wrangler r2 bucket create slopmatch-bin
