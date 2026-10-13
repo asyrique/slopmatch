@@ -1,0 +1,12 @@
+{
+  "name": "slopmatch",
+  "description": "slopmatch: match with builders who make slop like you",
+  "owner": { "name": "Asyrique Thevendran", "url": "https://github.com/asyrique" },
+  "plugins": [
+    {
+      "name": "slopmatch",
+      "source": "./plugin",
+      "description": "Builds a pseudonymous builder profile from your Claude Code transcripts and finds matches worldwide"
+    }
+  ]
+}

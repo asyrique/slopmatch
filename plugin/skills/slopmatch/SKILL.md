@@ -14,19 +14,20 @@ You are helping the user find people who build the way they do. You do the profi
 
 Everyone joins one **global pool** (room `world`) by default. Only use a different room if the user says they're at an event with its own room name (`^[a-z0-9][a-z0-9-]{2,31}$`).
 
-## 1. Find or install the CLI (local mode)
+## 1. Find the CLI (local mode)
 
-The CLI is a single binary, `slopmatch`:
+Use the first of these that works (run `<it> --version`; expect `0.3.0` or later):
 
-- macOS / Linux: `~/.slopmatch/bin/slopmatch`
-- Windows: `%USERPROFILE%\.slopmatch\bin\slopmatch.exe` (PowerShell: `& "$env:USERPROFILE\.slopmatch\bin\slopmatch.exe"`)
+1. **Plugin install (recommended):** if this skill came from the slopmatch Claude Code plugin, `slopmatch` is already on your PATH. It's a readable Node script (`slopmatch.mjs` in the plugin's `bin/`) and needs Node 18+. If `node` is missing, say so and use option 3.
+2. **Binary install:** `~/.slopmatch/bin/slopmatch` (Windows: `%USERPROFILE%\.slopmatch\bin\slopmatch.exe`).
+3. **Nothing installed:** suggest the plugin first. The user runs this in their terminal, then restarts Claude Code:
+   ```
+   claude plugin install slopmatch --marketplace asyrique/slopmatch
+   ```
+   (Claude Code older than 2.1.275: `claude plugin marketplace add asyrique/slopmatch` then `claude plugin install slopmatch@slopmatch`.)
+   Only if they can't use the plugin (no Node, or not Claude Code), offer the standalone installer, and **ask before running it**: `curl -fsSL https://slopmatch.lol/install.sh | sh` (Windows PowerShell: `irm https://slopmatch.lol/install.ps1 | iex`). It downloads one binary into `~/.slopmatch/bin`; they can read the script at that URL first.
 
-Run `<slopmatch> --version`. If it isn't there, **ask before running an installer**, then:
-
-- macOS / Linux: `curl -fsSL https://slopmatch.lol/install.sh | sh`
-- Windows (PowerShell): `irm https://slopmatch.lol/install.ps1 | iex`
-
-(For an event room, add `?room=<room>` to the installer URL, or run `slopmatch config --room <room>` later.) The installer downloads one binary into `~/.slopmatch/bin` and installs this skill. The server is `https://slopmatch.lol`. Below, `slopmatch` means the full path above.
+For an event room, run `slopmatch config --room <room>`. The server is `https://slopmatch.lol`. Below, `slopmatch` means whichever command worked.
 
 ## Privacy rules (non-negotiable)
 

@@ -1,0 +1,2 @@
+#!/usr/bin/env node
+import(require("node:url").pathToFileURL(require("node:path").join(__dirname, "slopmatch.mjs")).href);

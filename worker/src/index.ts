@@ -292,7 +292,7 @@ async function roomData(room: string, env: Env) {
 
 // ---------------------------------------------------------------- binaries & installers
 // The skill is bundled as text (wrangler `rules`) so installers can drop it straight into the agent.
-import SKILL_MD from "../../skills/slopmatch/SKILL.md";
+import SKILL_MD from "../../plugin/skills/slopmatch/SKILL.md";
 import AGENTS_MD from "./agents.md";
 import LANDING_HTML from "./landing.html";
 import JOIN_HTML from "./join.html";

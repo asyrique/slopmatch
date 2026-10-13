@@ -6,7 +6,8 @@
     "dev": "bun src/cli.ts",
     "typecheck": "tsc --noEmit",
     "build": "bun scripts/build.ts",
-    "release": "bun scripts/build.ts && bun scripts/release.ts"
+    "release": "bun scripts/build.ts && bun scripts/release.ts",
+    "build:plugin": "bun scripts/build-plugin.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
