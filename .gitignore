@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+cli/dist/
+fixtures/projects/
+.dev.vars*
+.env*
+*.log
+.DS_Store
