@@ -63,7 +63,7 @@
 
   .installer { max-width: 620px; background: var(--glass); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); border: 1px solid var(--line); border-radius: 18px; padding: 8px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8) }
   .cmd { display: flex; align-items: center; gap: 10px; background: #07070b; border-radius: 12px; padding: 16px 14px 16px 18px; font: 14.5px/1.5 var(--mono); border: 1px solid rgba(255,255,255,.05) }
-  .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; scrollbar-width: none; color: #e9e6f2 }
+  .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; scrollbar-width: none; color: #e9e6f2 }
   .cmd code::-webkit-scrollbar { display: none }
   .cmd .p { color: var(--accent); user-select: none }
   .copy { appearance: none; border: 0; cursor: pointer; flex: none; background: var(--accent); color: #1a0b06; font: 700 13px var(--mono); padding: 9px 14px; border-radius: 9px; transition: transform .15s, background .2s }
@@ -241,7 +241,7 @@
     <h2 class="reveal">Four steps. One of them is typing a slash.</h2>
     <p class="lede reveal">No sign-up, no OAuth and no uploading your chats. One global pool of builders, wherever you are. Works in Claude Code, Codex and claude.ai. Your own agent does the profiling, on your own machine, with its own reasoning.</p>
     <div class="steps">
-      <div class="step reveal" style="--c:var(--accent)"><span class="n">01</span><h3>Install</h3><p>One command installs a single binary into <code>~/.slopmatch</code> and adds the <code>/slopmatch</code> skill to your agent.</p></div>
+      <div class="step reveal" style="--c:var(--accent)"><span class="n">01</span><h3>Install</h3><p>One command adds the slopmatch plugin to Claude Code: a skill plus a small, readable CLI. On claude.ai or your phone, nothing to install.</p></div>
       <div class="step reveal" style="--c:var(--pink);transition-delay:.08s"><span class="n">02</span><h3>Get read</h3><p>Your agent goes through your recent transcripts and skills: planner or diver, big delegator or tight steerer, 2am shipper or 9-to-5.</p></div>
       <div class="step reveal" style="--c:var(--cyan);transition-delay:.16s"><span class="n">03</span><h3>Approve &amp; publish</h3><p>You see the exact payload first: a pseudonymous card and ten numbers. Nothing goes up until you say yes.</p></div>
       <div class="step reveal" style="--c:var(--lime);transition-delay:.24s"><span class="n">04</span><h3>Match &amp; reveal</h3><p>See why you'd click and where you'd clash. Contacts swap only if you <em>both</em> reveal.</p></div>
@@ -360,10 +360,12 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 // One instruction per device: phones get Claude (no shell there), Windows gets PowerShell, everything else gets sh.
 const MOBILE = /iPhone|iPad|iPod|Android|Mobile/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const NATIVE = MOBILE ? "ai" : /Win/.test(navigator.platform) || /Windows/.test(navigator.userAgent) ? "ps" : "sh";
-const state = { os: NATIVE, room: "world" };
+// Desktop default is the Claude Code plugin: same command on every OS, readable code, no curl | sh.
+const state = { os: MOBILE ? "ai" : "plugin", room: "world" };
 try { const q = new URLSearchParams(location.search).get("room"); if (q && ROOM_RE.test(q.toLowerCase())) state.room = q.toLowerCase(); } catch {}
 function cmdFor() {
   const q = state.room === "world" ? "" : `?room=${state.room}`;
+  if (state.os === "plugin") return "claude plugin install slopmatch --marketplace asyrique/slopmatch";
   return state.os === "sh"
     ? `curl -fsSL ${q ? `"${ORIGIN}/install.sh${q}"` : `${ORIGIN}/install.sh`} | sh`
     : `irm "${ORIGIN}/install.ps1${q}" | iex`;
@@ -373,11 +375,14 @@ function renderInstallers() {
     const ai = state.os === "ai";
     w.classList.toggle("ai", ai);
     w.querySelector(".cmd .p").textContent = ai ? "" : state.os === "ps" ? "PS>" : "$";
+    const others = `<a href="#" data-useai>use claude.ai instead</a>`;
     w.querySelector("[data-copy]").textContent = ai ? "open in Claude ↗" : "copy";
     w.querySelector(".then").innerHTML = ai
       ? 'hit send, then tap the <b>Review and publish</b> link Claude gives you · in the Claude app? <a href="#" data-copyprompt>copy the prompt</a>' +
         (MOBILE ? "" : ' · <a href="#" data-native>back to the terminal</a>')
-      : `then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a href="/install.${state.os === "ps" ? "ps1" : "sh"}" target="_blank">read the script first</a> · <a href="#" data-useai>use claude.ai instead</a>`;
+      : state.os === "plugin"
+        ? `then in a new Claude Code session: <kbd>/slopmatch:slopmatch</kbd> · <a href="https://github.com/asyrique/slopmatch/tree/main/plugin" target="_blank" rel="noopener">read the plugin's code</a> · <a href="#" data-standalone>no Claude Code?</a> · ${others}`
+        : `then in your agent: <kbd>/slopmatch</kbd> · <a href="/install.${state.os === "ps" ? "ps1" : "sh"}" target="_blank">read the script first</a> · <a href="#" data-native>use the Claude Code plugin</a> · ${others}`;
     w.querySelector("[data-cmd]").textContent = ai ? "Claude writes your card from its memory of you" : cmdFor();
   });
   document.getElementById("navroom").href = "/r/" + state.room;
@@ -395,8 +400,12 @@ document.querySelectorAll("[data-installer]").forEach((w) => {
 });
 renderInstallers();
 document.addEventListener("click", async (e) => {
-  const sw = e.target.closest("[data-useai],[data-native]");
-  if (sw) { e.preventDefault(); state.os = sw.hasAttribute("data-useai") ? "ai" : NATIVE; renderInstallers(); return; }
+  const sw = e.target.closest("[data-useai],[data-native],[data-standalone]");
+  if (sw) {
+    e.preventDefault();
+    state.os = sw.hasAttribute("data-useai") ? "ai" : sw.hasAttribute("data-standalone") ? NATIVE : MOBILE ? "ai" : "plugin";
+    renderInstallers(); return;
+  }
   const a = e.target.closest("[data-copyprompt]"); if (!a) return;
   e.preventDefault();
   try { await navigator.clipboard.writeText(PROMPT); a.textContent = "copied ✓ now paste it into a new chat"; } catch { location.href = "/prompt"; }

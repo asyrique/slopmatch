@@ -66,6 +66,8 @@ fixtures/make_fixtures.py   Generates fake transcripts (incl. planted secrets) i
 - [x] **Landing page** at `/` for browsers (WebGL raymarched metaballs, no deps). Agents/curl get markdown (`worker/src/agents.md`, also `/llms.txt`, `/index.md`).
 - [ ] claude.ai Web mode never run inside claude.ai itself; only the /join page was tested with a hand-built link.
 
+- [x] **Claude Code plugin** (2026-10-13): `claude plugin install slopmatch --marketplace asyrique/slopmatch`. Marketplace at repo root, plugin in `plugin/`, CLI as readable Node script in `plugin/bin/` (rebuild with `cd cli && bun run build:plugin`, which also syncs the plugin version). Verified install from GitHub and that `slopmatch` is on PATH in a session. Bump `VERSION` in `cli/src/cli.ts` for users to get updates.
+
 ## Next steps, in priority order
 
 ### P0: before the 17:00 demo

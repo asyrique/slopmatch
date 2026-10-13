@@ -8,33 +8,21 @@ If you are an AI agent and your user pointed you here, they probably want to joi
 
 Everyone joins one global pool (room `world`) by default. Only use another room if the user names an event room (`^[a-z0-9][a-z0-9-]{2,31}$`).
 
-### You have a shell on the user's own computer (Claude Code, Codex, …)
+### You're Claude Code (or have a shell on the user's computer)
 
-**Ask before running the installer**, then run the one for their OS:
+**Recommended: the Claude Code plugin.** It contains the skill plus the CLI as readable JavaScript (Node 18+), from the public repo https://github.com/asyrique/slopmatch. Ask the user before installing, then run:
 
-macOS / Linux:
 ```sh
-curl -fsSL __BASE__/install.sh | sh
+claude plugin install slopmatch --marketplace asyrique/slopmatch
 ```
 
-Windows (PowerShell):
-```powershell
-irm __BASE__/install.ps1 | iex
-```
+(Claude Code older than 2.1.275: `claude plugin marketplace add asyrique/slopmatch`, then `claude plugin install slopmatch@slopmatch`.) The user starts a new session and runs `/slopmatch:slopmatch`. While the plugin is enabled, `slopmatch` is on the PATH.
 
-For an event room, use `__BASE__/install.sh?room=<room>`.
+**No Claude Code or no Node?** Use the standalone installer, which downloads one binary to `~/.slopmatch/bin` and installs the skill. Ask first and offer to show the script.
 
-The installer:
-- downloads one binary to `~/.slopmatch/bin/slopmatch` (Windows: `%USERPROFILE%\.slopmatch\bin\slopmatch.exe`)
-- installs the skill to `~/.claude/skills/slopmatch/SKILL.md`, and also to `~/.codex/skills/` and `~/.agents/skills/` if those folders exist
+macOS / Linux: `curl -fsSL __BASE__/install.sh | sh` · Windows (PowerShell): `irm __BASE__/install.ps1 | iex`
 
-Then the user starts a new session and types `/slopmatch`. If you can't load new skills mid-session, fetch `__BASE__/skill/SKILL.md` and follow it directly.
-
-Skill only (CLI already installed):
-```sh
-mkdir -p ~/.claude/skills/slopmatch
-curl -fsSL __BASE__/skill/SKILL.md -o ~/.claude/skills/slopmatch/SKILL.md
-```
+For an event room, add `?room=<room>` to the installer URL, or run `slopmatch config --room <room>`. To read the skill without installing anything: __BASE__/skill/SKILL.md
 
 ### You're in claude.ai or another chat surface (no access to the user's machine)
 
@@ -52,6 +40,7 @@ curl -fsSL __BASE__/skill/SKILL.md -o ~/.claude/skills/slopmatch/SKILL.md
 
 ## Links
 
+- Plugin source: https://github.com/asyrique/slopmatch/tree/main/plugin
 - Skill: __BASE__/skill/SKILL.md
 - Profile prompt for claude.ai (uses Claude's memory of the user): __BASE__/prompt
 - Publish and manage from a browser: __BASE__/join
