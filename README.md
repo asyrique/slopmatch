@@ -17,10 +17,10 @@ worker/                    ← Cloudflare Worker + D1 + R2: API, projector page,
 
 ```bash
 # backend
-cd worker && npm install
-npx wrangler d1 create slopmatch            # paste database_id into wrangler.jsonc
-npx wrangler r2 bucket create slopmatch-bin
-npm run db:remote && npm run deploy       # → https://slopmatch.lol (custom domain in wrangler.jsonc)
+cd worker && bun install
+bunx wrangler d1 create slopmatch            # paste database_id into wrangler.jsonc
+bunx wrangler r2 bucket create slopmatch-bin
+bun run db:remote && bun run deploy       # → https://slopmatch.lol (custom domain in wrangler.jsonc)
 
 # binaries (needs bun: curl -fsSL https://bun.sh/install | bash)
 cd ../cli && bun install
@@ -68,7 +68,7 @@ Score = 65% dimension fit (1 − |diff| per dimension; in complement mode, plann
 ```bash
 cd cli && bun src/cli.ts extract --path ../fixtures/projects --days 30   # run from source
 bun scripts/build.ts linux-x64                                           # build one target
-cd ../worker && npm run db:local && npm run dev
+cd ../worker && bun run db:local && bun run dev
 bun ../cli/scripts/release.ts --local                                    # binaries into local R2
 ```
 

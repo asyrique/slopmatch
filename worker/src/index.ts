@@ -286,6 +286,9 @@ async function roomData(room: string, env: Env) {
 }
 
 // ---------------------------------------------------------------- binaries & installers
+// The skill is bundled as text (wrangler `rules`) so installers can drop it straight into the agent.
+import SKILL_MD from "../../skills/slopmatch/SKILL.md";
+
 async function download(name: string, req: Request, env: Env) {
   if (!BINARIES.has(name)) throw new HttpError(404, "no such binary");
   const obj = req.method === "HEAD" ? await env.BIN.head(name) : await env.BIN.get(name);
@@ -310,7 +313,7 @@ function installer(path: string, url: URL) {
 }
 
 const INSTALL_SH = `#!/bin/sh
-# slopmatch installer for macOS and Linux. Installs one binary to ~/.slopmatch/bin and nothing else.
+# slopmatch installer for macOS and Linux. Installs one binary to ~/.slopmatch/bin and the /slopmatch skill for your agent.
 set -eu
 BASE="__BASE__"
 ROOM="__ROOM__"
@@ -331,10 +334,20 @@ if [ "$os" = darwin ]; then
 fi
 if [ -n "$ROOM" ]; then "$dir/slopmatch" config --url "$BASE" --room "$ROOM" >/dev/null; else "$dir/slopmatch" config --url "$BASE" >/dev/null; fi
 echo "Installed $dir/slopmatch ($("$dir/slopmatch" --version))"
-echo "Next: ask your agent to run /slopmatch"
+# Install the /slopmatch skill for Claude Code, plus Codex and other agents whose folders already exist.
+if skill=$(curl -fsSL "$BASE/skill/SKILL.md"); then
+  for agent in "$HOME/.claude" "$HOME/.codex" "$HOME/.agents"; do
+    if [ "$agent" = "$HOME/.claude" ] || [ -d "$agent" ]; then
+      mkdir -p "$agent/skills/slopmatch" && printf '%s\\n' "$skill" > "$agent/skills/slopmatch/SKILL.md" && echo "Skill installed: $agent/skills/slopmatch/SKILL.md"
+    fi
+  done
+else
+  echo "Could not download the skill; get it from $BASE/skill/SKILL.md" >&2
+fi
+echo "Next: start a new agent session and run /slopmatch"
 `;
 
-const INSTALL_PS1 = `# slopmatch installer for Windows. Installs one binary to %USERPROFILE%\\.slopmatch\\bin and nothing else.
+const INSTALL_PS1 = `# slopmatch installer for Windows. Installs one binary to %USERPROFILE%\\.slopmatch\\bin and the /slopmatch skill for your agent.
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 $Base = "__BASE__"
@@ -349,7 +362,20 @@ Move-Item -Force "$exe.tmp" $exe
 Unblock-File $exe
 if ($Room) { & $exe config --url $Base --room $Room | Out-Null } else { & $exe config --url $Base | Out-Null }
 Write-Host "Installed $exe ($(& $exe --version))"
-Write-Host "Next: ask your agent to run /slopmatch"
+# Install the /slopmatch skill for Claude Code, plus Codex and other agents whose folders already exist.
+try {
+  $skill = (Invoke-WebRequest -UseBasicParsing -Uri "$Base/skill/SKILL.md").Content
+  foreach ($name in ".claude", ".codex", ".agents") {
+    $agent = Join-Path $env:USERPROFILE $name
+    if ($name -eq ".claude" -or (Test-Path $agent)) {
+      $sd = Join-Path $agent "skills\\slopmatch"
+      New-Item -ItemType Directory -Force -Path $sd | Out-Null
+      [IO.File]::WriteAllText((Join-Path $sd "SKILL.md"), $skill)
+      Write-Host "Skill installed: $sd\\SKILL.md"
+    }
+  }
+} catch { Write-Host "Could not download the skill; get it from $Base/skill/SKILL.md" }
+Write-Host "Next: start a new agent session and run /slopmatch"
 `;
 
 // ---------------------------------------------------------------- router
@@ -370,12 +396,18 @@ export default {
       m = p.match(/^\/dl\/([^/]+)$/);
       if (m && (req.method === "GET" || req.method === "HEAD")) return await download(m[1], req, env);
       if (p === "/install.sh" || p === "/install.ps1") return installer(p, url);
+      if (p === "/skill/SKILL.md" && (req.method === "GET" || req.method === "HEAD")) {
+        return new Response(req.method === "HEAD" ? null : SKILL_MD, {
+          headers: { "content-type": "text/markdown; charset=utf-8", "cache-control": "public, max-age=60" },
+        });
+      }
       if (p === "/") {
         return new Response(
           "slopmatch\n\n" +
           `Mac/Linux:  curl -fsSL ${url.origin}/install.sh?room=<room> | sh\n` +
           `Windows:    irm "${url.origin}/install.ps1?room=<room>" | iex\n\n` +
-          "Then install the slopmatch skill in your agent and open /r/<room> on the projector.\n",
+          `The installer also adds the /slopmatch skill to Claude Code (and Codex if present): ${url.origin}/skill/SKILL.md\n` +
+          "Open /r/<room> on the projector.\n",
         );
       }
       return err(404, "not found");

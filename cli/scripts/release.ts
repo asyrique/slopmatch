@@ -5,7 +5,7 @@ import { TARGETS } from "./build";
 const where = process.argv.includes("--local") ? "--local" : "--remote";
 for (const t of TARGETS) {
   const p = Bun.spawnSync(
-    ["npx", "wrangler", "r2", "object", "put", `slopmatch-bin/${t.out}`, `--file=../cli/dist/${t.out}`,
+    ["bunx", "wrangler", "r2", "object", "put", `slopmatch-bin/${t.out}`, `--file=../cli/dist/${t.out}`,
       "--content-type=application/octet-stream", where],
     { cwd: "../worker", stdout: "inherit", stderr: "inherit" },
   );

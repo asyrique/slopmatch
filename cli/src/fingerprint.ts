@@ -26,7 +26,7 @@ const CMD_NAME = /<command-name>\s*\/?([\w:.-]+)\s*<\/command-name>/;
 const IMAGE_PH = /\[Image #\d+\]/g;
 const NOISE_PREFIXES = [
   "<local-command-", "<command-message>", "<command-args>", "Caveat: The messages below",
-  "<bash-input>", "<bash-stdout>", "<bash-stderr>",
+  "<bash-input>", "<bash-stdout>", "<bash-stderr>", "[Image: original ",
   "This session is being continued from a previous conversation",
 ];
 const CMD_TOKEN = /^[a-z][a-z0-9._-]{1,24}$/;

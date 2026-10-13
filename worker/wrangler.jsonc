@@ -4,15 +4,17 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-09-01",
   "observability": { "enabled": true },
+  // bundle skills/slopmatch/SKILL.md as a string, served at /skill/SKILL.md
+  "rules": [{ "type": "Text", "globs": ["**/*.md"], "fallthrough": true }],
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "slopmatch",
-      // replace after: npx wrangler d1 create slopmatch
+      // replace after: bunx wrangler d1 create slopmatch
       "database_id": "00000000-0000-0000-0000-000000000000"
     }
   ],
-  // binaries served at /dl/<name>; create with: npx wrangler r2 bucket create slopmatch-bin
+  // binaries served at /dl/<name>; create with: bunx wrangler r2 bucket create slopmatch-bin
   "r2_buckets": [{ "binding": "BIN", "bucket_name": "slopmatch-bin" }],
   // the zone must be on your Cloudflare account; deploy attaches the domain and its certificate
   "routes": [{ "pattern": "slopmatch.lol", "custom_domain": true }]
