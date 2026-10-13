@@ -381,7 +381,7 @@ function renderInstallers() {
       ? 'hit send, then tap the <b>Review and publish</b> link Claude gives you · in the Claude app? <a href="#" data-copyprompt>copy the prompt</a>' +
         (MOBILE ? "" : ' · <a href="#" data-native>back to the terminal</a>')
       : state.os === "plugin"
-        ? `then in a new Claude Code session: <kbd>/slopmatch:slopmatch</kbd> · <a href="https://github.com/asyrique/slopmatch/tree/main/plugin" target="_blank" rel="noopener">read the plugin's code</a> · <a href="#" data-standalone>no Claude Code?</a> · ${others}`
+        ? `then in a new Claude Code session: <kbd>/slopmatch:me</kbd> · <a href="https://github.com/asyrique/slopmatch/tree/main/plugin" target="_blank" rel="noopener">read the plugin's code</a> · <a href="#" data-standalone>no Claude Code?</a> · ${others}`
         : `then in your agent: <kbd>/slopmatch</kbd> · <a href="/install.${state.os === "ps" ? "ps1" : "sh"}" target="_blank">read the script first</a> · <a href="#" data-native>use the Claude Code plugin</a> · ${others}`;
     w.querySelector("[data-cmd]").textContent = ai ? "Claude writes your card from its memory of you" : cmdFor();
   });

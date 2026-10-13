@@ -1,9 +1,11 @@
 # slopmatch.lol
 
-Find people who build the way you do (or who cover your gaps). Your own coding agent profiles you **locally** from your transcripts and installed skills. Only a pseudonymous card plus 10 numbers is uploaded, after you approve the exact payload. Names are swapped only on a mutual, double-blind reveal.
+Find people who build the way you do (or who cover your gaps), worldwide. Claude profiles you **locally** from your transcripts and installed skills (Claude Code), or from its memory of you (claude.ai). Only a pseudonymous card plus 10 numbers is uploaded, after you approve the exact payload. Names are swapped only on a mutual, double-blind reveal.
 
 ```
-skills/slopmatch/SKILL.md   ← the skill (any agent that loads SKILL.md skills)
+plugin/                    ← Claude Code plugin (marketplace manifest at .claude-plugin/)
+  skills/me/SKILL.md         the skill: /slopmatch:me (served standalone as /slopmatch)
+  bin/slopmatch(.mjs)        the CLI bundled as readable Node (bun run build:plugin in cli/)
 cli/                       ← `slopmatch` CLI in TypeScript, compiled with Bun to one binary per platform
   src/fingerprint.ts         transcript extractor (Claude Code JSONL today)
   src/redact.ts              secret/PII redaction for prompt samples
@@ -29,23 +31,21 @@ bun run release                           # builds 5 binaries and uploads them t
 
 `wrangler.jsonc` already routes `slopmatch.lol` as a custom domain; the zone must be on the same Cloudflare account. Change or remove the `routes` entry to deploy elsewhere.
 
-## Install (what people in the room run)
+## Install
 
-```bash
-# macOS / Linux
-curl -fsSL "https://slopmatch.lol/install.sh?room=sg-build-day" | sh
-# Windows PowerShell
-irm "https://slopmatch.lol/install.ps1?room=sg-build-day" | iex
+**Claude Code (recommended):**
+
+```
+/plugin install slopmatch --marketplace asyrique/slopmatch
 ```
 
-Then copy the skill into their agent and type `/slopmatch`:
+Or from a shell: `claude plugin install slopmatch --marketplace asyrique/slopmatch`. Then run `/slopmatch:me` in a new session. Needs Node 18+.
 
-```bash
-cp -r skills/slopmatch ~/.claude/skills/     # Claude Code
-cp -r skills/slopmatch ~/.codex/skills/      # Codex
-```
+**claude.ai or your phone:** open https://slopmatch.lol and tap **Open in Claude**. Nothing to install.
 
-Projector: `https://slopmatch.lol/r/sg-build-day`
+**No Claude Code (Codex, other agents):** `curl -fsSL https://slopmatch.lol/install.sh | sh` (Windows: `irm https://slopmatch.lol/install.ps1 | iex`) installs a standalone binary and the skill as `/slopmatch`. Read the script first at the same URL.
+
+Everyone joins the global pool (`world`). For an event room, add `?room=<room>` to the installer URL or run `slopmatch config --room <room>`. Live board: `https://slopmatch.lol/r/world`
 
 ## API
 

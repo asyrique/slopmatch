@@ -11,7 +11,7 @@ The user's own coding agent profiles them **locally** from their agent transcrip
 ## Architecture
 
 ```
-skills/slopmatch/SKILL.md   Agent instructions: find/install CLI → extract → write profile locally →
+plugin/skills/me/SKILL.md   Agent instructions (/slopmatch:me; standalone copies are renamed slopmatch): find/install CLI → extract → write profile locally →
                             write card → publish (dry run, then --yes) → matches → reveal
 cli/                        TypeScript CLI, compiled with Bun into one binary per platform
   src/fingerprint.ts        Claude Code JSONL (~/.claude/projects) → metrics, 10 dimensions, redacted samples

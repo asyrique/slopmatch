@@ -1,6 +1,6 @@
 ---
-name: slopmatch
-description: Build a pseudonymous builder profile (from this machine's coding-agent transcripts and skills, or in claude.ai from the conversation and a short interview), then find and reveal matches with builders worldwide. Use when the user types /slopmatch, asks to find a cofounder, teammate or builder match, or wants to see their builder profile.
+name: me
+description: Build a pseudonymous builder profile (from this machine's coding-agent transcripts and skills, or in claude.ai from the conversation and a short interview), then find and reveal matches with builders worldwide. Use when the user types /slopmatch:me or /slopmatch, asks to find a cofounder, teammate or builder match, or wants to see their builder profile.
 ---
 
 # slopmatch

@@ -16,7 +16,7 @@ Everyone joins one global pool (room `world`) by default. Only use another room 
 claude plugin install slopmatch --marketplace asyrique/slopmatch
 ```
 
-(Claude Code older than 2.1.275: `claude plugin marketplace add asyrique/slopmatch`, then `claude plugin install slopmatch@slopmatch`.) The user starts a new session and runs `/slopmatch:slopmatch`. While the plugin is enabled, `slopmatch` is on the PATH.
+(Claude Code older than 2.1.275: `claude plugin marketplace add asyrique/slopmatch`, then `claude plugin install slopmatch@slopmatch`.) The user starts a new session and runs `/slopmatch:me`. While the plugin is enabled, `slopmatch` is on the PATH.
 
 **No Claude Code or no Node?** Use the standalone installer, which downloads one binary to `~/.slopmatch/bin` and installs the skill. Ask first and offer to show the script.
 
