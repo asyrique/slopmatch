@@ -85,10 +85,10 @@
     background:conic-gradient(from var(--rim,0deg), #ff7a59, #ff4f9a, #8b72ff, #57e3ff, #c8ff4d, #ff7a59);
     -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:.55; transition:opacity .4s; animation:rim 6s linear infinite }
   .qrcard:hover { box-shadow:0 30px 80px -30px rgba(0,0,0,.8), 0 0 60px -10px rgba(200,255,77,.45) } .qrcard:hover::before { opacity:1 }
-  .qrcard img { box-shadow:0 0 0 6px rgba(244,241,234,.06) }
+  .qrcard svg { box-shadow:0 0 0 6px rgba(244,241,234,.06) }
   @property --rim { syntax:"<angle>"; inherits:false; initial-value:0deg }
   @keyframes rim { to { --rim:360deg } }
-  .qrcard img { width:148px; height:148px; border-radius:10px; display:block }
+  .qrcard svg { width:148px; height:148px; border-radius:10px; display:block }
   .qrcard b { color:var(--ink); font-family:var(--display); font-size:15px }
   /* desktop only: phones are already where the QR would send them */
   @media (max-width: 899px), (hover: none), (pointer: coarse) { .qrcard { display:none } }
@@ -229,7 +229,7 @@
       <div class="then">then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a data-roomlink href="/r/world">see who's in ↗</a></div>
     </div>
     <a class="qrcard" href="/join" aria-label="Scan to join on your phone">
-      <img src="/qr.svg" alt="QR code linking to slopmatch.lol/join" width="148" height="148">
+      __QR_SVG__
       <span><b>On your phone?</b><br>Scan and Claude writes your card from its memory of you.</span>
     </a>
     </div>
@@ -624,7 +624,29 @@ void main(){
   const uRes = U("uRes"), uT = U("uT"), uM = U("uM"), uS = U("uS"), uMob = U("uMob"), uQ = U("uQ"), uQH = U("uQH");
   // the QR card is part of the scene: track where it is on screen and whether it's hovered
   const qcard = document.querySelector(".qrcard");
-  const q = { x: 0, y: 0, pres: 0, hover: 0, hot: false };
+  const q = { x: 0, y: 0, pres: 0, hover: 0, hot: false, frame: 0 };
+  // The QR's dark modules take their colour from the blobs behind the card. Each sample is scaled so its
+  // brightest channel is at most 110/255: even a white blob stays ~4.5:1 against the light background.
+  const qstops = [...document.querySelectorAll(".qr-live stop")], qgrad = document.querySelector(".qr-live linearGradient");
+  const ink = [10, 10, 15], qcol = qstops.map(() => ink.slice()), px = new Uint8Array(4);
+  function tintQr(now) {
+    const b = qcard.querySelector("svg").getBoundingClientRect(), sx = canvas.width / innerWidth, sy = canvas.height / innerHeight;
+    [[-.45, -.3], [.5, .5], [1.45, 1.3]].forEach(([fx, fy], i) => { // reach past the card so neighbouring blobs feed in
+      const x = Math.round((b.left + b.width * fx) * sx), y = Math.round(canvas.height - (b.top + b.height * fy) * sy);
+      if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return;
+      gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      // push saturation up (the shading adds white highlights), then scale the brightest channel down to 110
+      const avg = (px[0] + px[1] + px[2]) / 3, sat = [px[0], px[1], px[2]].map((c) => Math.max(0, avg + (c - avg) * 2.6));
+      const m = Math.max(...sat);
+      const target = Math.max(px[0], px[1], px[2]) < 40 || m < 1 ? ink : sat.map((c) => (c * 110) / m);
+      qcol[i] = qcol[i].map((c, k) => c + (target[k] - c) * .35);
+      qstops[i].setAttribute("stop-color", `rgb(${qcol[i].map(Math.round).join(",")})`);
+    });
+    // slowly rotate the gradient so the colour flows across the code
+    const a = now / 4000, n = qgrad.viewportElement.viewBox.baseVal.width, c = n / 2, r = n * .7;
+    qgrad.setAttribute("x1", c - Math.cos(a) * r); qgrad.setAttribute("y1", c - Math.sin(a) * r);
+    qgrad.setAttribute("x2", c + Math.cos(a) * r); qgrad.setAttribute("y2", c + Math.sin(a) * r);
+  }
   if (qcard) {
     qcard.addEventListener("pointerenter", () => (q.hot = true));
     qcard.addEventListener("pointerleave", () => { q.hot = false; qcard.style.transform = ""; });
@@ -668,6 +690,7 @@ void main(){
     gl.uniform1f(uS, Math.min(scroll, 6));
     gl.uniform1f(uMob, innerWidth < 900 ? 1 : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (qcard && q.pres > .05 && ++q.frame % 5 === 0) tintQr(now);
     if (!reduce) requestAnimationFrame(frame);
   }
   addEventListener("pointermove", () => { mouse.lastMove = performance.now(); }, { passive: true });

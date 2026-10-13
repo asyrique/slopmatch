@@ -335,7 +335,7 @@ function zipOne(name: string, text: string): Uint8Array {
 const SKILL_ZIP = zipOne("slopmatch/SKILL.md", SKILL_MD);
 
 /** QR for this site's own /join page (never arbitrary input), dark on light so every phone camera reads it. */
-function qrSvg(text: string) {
+function qrSvg(text: string, opts: { live?: boolean } = {}) {
   const qr = qrcode(0, "M");
   qr.addData(text);
   qr.make();
@@ -343,7 +343,12 @@ function qrSvg(text: string) {
   let d = "";
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c + pad} ${r + pad}h1v1h-1z`;
   const size = n + pad * 2;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#f4f1ea"/><path d="${d}" fill="#0a0a0f"/></svg>`;
+  // live: the landing page recolours the gradient stops from the 3D scene behind the card (kept dark enough to scan)
+  const defs = opts.live
+    ? `<defs><linearGradient id="qrg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${size}" y2="${size}"><stop offset="0" stop-color="#0a0a0f"/><stop offset=".5" stop-color="#0a0a0f"/><stop offset="1" stop-color="#0a0a0f"/></linearGradient></defs>`
+    : "";
+  const attrs = opts.live ? ` class="qr-live" role="img" aria-label="QR code linking to ${text}"` : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg"${attrs} viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${defs}<rect width="${size}" height="${size}" fill="#f4f1ea"/><path d="${d}" fill="${opts.live ? "url(#qrg)" : "#0a0a0f"}"/></svg>`;
 }
 
 function markdown(url: URL) {
@@ -477,7 +482,7 @@ export default {
       }
       if (p === "/") {
         if (!wantsHtml(req)) return markdown(url);
-        return new Response(LANDING, {
+        return new Response(LANDING.replace("__QR_SVG__", qrSvg(`${url.origin}/join`, { live: true })), {
           headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60", vary: "Accept, User-Agent" },
         });
       }
