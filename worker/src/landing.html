@@ -611,7 +611,11 @@ function renderMatch() {
   document.getElementById("why").innerHTML = comp
     ? `<b>why you'd click:</b> you ${side(me[bi], bi)}, they ${side(top.d[bi], bi)}. division of labour.`
     : `<b>why you'd click:</b> you both ${side((me[bi] + top.d[bi]) / 2, bi)}.`;
-  document.getElementById("clash").innerHTML = `<b>where you'd clash:</b> you ${side(me[wi], wi)}; they ${side(top.d[wi], wi)}.`;
+  // in complement mode, being too alike on a complementable dimension is the clash: nobody covers the other side
+  const tooAlike = mmode === "complement" && COMP6.has(DIMS6[wi].k);
+  document.getElementById("clash").innerHTML = tooAlike
+    ? `<b>where you'd clash:</b> you both ${side((me[wi] + top.d[wi]) / 2, wi)}, so nobody covers the other side.`
+    : `<b>where you'd clash:</b> you ${side(me[wi], wi)}; they ${side(top.d[wi], wi)}.`;
   document.getElementById("rest").innerHTML = ranked.slice(1, 4).map((r) => `<div class="r"><span>${r.h}</span><i><u style="width:${r.score}%"></u></i><span>${r.score}</span></div>`).join("");
   const target = top.score, from = shownScore, t0 = performance.now();
   (function step(t) { const k = Math.min(1, (t - t0) / 500); shownScore = Math.round(from + (target - from) * (1 - Math.pow(1 - k, 3))); document.getElementById("tScore").textContent = shownScore; if (k < 1) requestAnimationFrame(step); })(t0);
