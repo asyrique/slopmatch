@@ -48,6 +48,7 @@ Rules for what goes in the link:
 - Topics (`t`): up to 8 coarse tags, like payments, data pipelines, typescript, cloudflare
 - File types (`f`): up to 6, only for languages I clearly use
 - No names, employers, clients, project or product names, locations, links, or quotes, anywhere in the link
+- Keep it clean: no swearing or slurs (slopmatch rejects them), even if I swear a lot. Describe it instead ("vents at the agent")
 - Put nothing in the link that you didn't show me in Part 1
 
 End by telling me: tapping the link opens a page that shows exactly what would be uploaded, and nothing is published until I press Publish. If I want changes, I can ask you for a new link.

@@ -6,8 +6,9 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileS
 import { homedir } from "node:os";
 import { join, resolve, relative, sep } from "node:path";
 import { buildFingerprint, previewText } from "./fingerprint";
+import { hasBadWords } from "../../worker/src/clean";
 
-const VERSION = "0.4.0";
+const VERSION = "0.4.1";
 const DEFAULT_URL = "https://slopmatch.lol";
 /** The global pool. Private rooms (e.g. for an event) are opt-in via --room. */
 const DEFAULT_ROOM = "world";
@@ -213,6 +214,10 @@ async function cmdPublish() {
   const card = readJson(cardPath);
   if (!card) die(`Could not read card JSON at ${cardPath}`);
   const payload = buildPayload(card, fp, t.room);
+  // the server rejects swears on the card; say so before anything is sent
+  const c = payload.card, dirty = (["headline", "style", "looking_for"] as const).filter((k) => hasBadWords(c[k]));
+  if (hasBadWords(c.topics.join(" "))) dirty.push("topics" as any);
+  if (dirty.length) die(`Please keep the card clean: ${dirty.join(", ")} ${dirty.length > 1 ? "have" : "has"} a word slopmatch doesn't allow. Edit ${cardPath} and try again.`);
   if (!v.yes) {
     out(`DRY RUN. This is exactly what would be sent to ${t.url}\n`);
     out(payload);
@@ -246,6 +251,7 @@ async function cmdReveal() {
   const handle = positionals[1];
   if (!handle) die("Usage: slopmatch reveal <handle> --contact \"telegram @me\"");
   if (!v.contact) die("--contact is required");
+  if (hasBadWords(v.contact)) die("Please keep the contact clean: it has a word slopmatch doesn't allow.");
   out(await call("POST", url, "/api/reveals", { handle, contact: clip(v.contact, 120) }, ident.token));
 }
 

@@ -25,6 +25,8 @@ jobs:
         run: |
           cd cli && bunx tsc --noEmit
           cd ../worker && bunx tsc --noEmit
+      - name: Unit tests (swear filter)
+        run: cd worker && bun test
       - name: Plugin CLI is in sync with cli/src
         run: |
           cd cli && bun run build:plugin

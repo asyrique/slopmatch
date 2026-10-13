@@ -1,7 +1,7 @@
 {
   "name": "slopmatch",
   "displayName": "slopmatch",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Match with builders who make slop like you. Profiles how you build locally from your agent transcripts; only a pseudonymous card and 10 numbers are shared, after you approve them.",
   "author": {
     "name": "Asyrique Thevendran",

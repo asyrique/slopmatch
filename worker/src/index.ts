@@ -161,7 +161,7 @@ function cleanDims(v: any): Dims {
 function cleanCard(v: any): Card {
   if (!v || typeof v !== "object") throw new HttpError(400, "card required");
   const b = v.big5 || {};
-  return {
+  const card: Card = {
     headline: str(v.headline, 90),
     style: str(v.style, 400),
     big5: { O: num01(b.O), C: num01(b.C), E: num01(b.E), A: num01(b.A), N: num01(b.N) },
@@ -170,6 +170,10 @@ function cleanCard(v: any): Card {
     looking_for: str(v.looking_for || "just curious", 40),
     mode: v.mode === "complement" ? "complement" : "similar",
   };
+  // everything on the card is shown to other people (matches, world page), so keep it clean
+  const fields: [string, string][] = [["headline", card.headline], ["style", card.style], ["topics", card.topics.join(" ")], ["looking_for", card.looking_for]];
+  for (const [name, text] of fields) if (hasBadWords(text)) throw new HttpError(400, `please keep it clean: the ${name.replace("_", " ")} ${name === "topics" ? "have" : "has"} a word we don't allow`);
+  return card;
 }
 
 // ---------------------------------------------------------------- scoring
@@ -288,6 +292,7 @@ async function reveal(req: Request, env: Env) {
   const me = await requireAuth(req, env);
   const body = await readJson(req);
   const contact = str(body.contact, 120);
+  if (hasBadWords(contact)) throw new HttpError(400, "please keep it clean: the contact has a word we don't allow");
   if (!contact) throw new HttpError(400, "contact required");
   const target = await env.DB.prepare("SELECT id, handle FROM profiles WHERE room = ? AND handle = ?")
     .bind(me.room, str(body.handle, 40).toLowerCase()).first<{ id: string; handle: string }>();
@@ -383,6 +388,7 @@ import JOIN_HTML from "./join.html";
 import ROOM_HTML from "./room.html";
 import PROMPT_MD from "./prompt.md";
 import qrcode from "qrcode-generator";
+import { hasBadWords } from "./clean";
 
 // In the plugin the skill is "me" (/slopmatch:me). Installed on its own (curl installer, claude.ai zip) it keeps the name slopmatch.
 const SKILL_MD = PLUGIN_SKILL_MD.replace(/^name: me$/m, "name: slopmatch");

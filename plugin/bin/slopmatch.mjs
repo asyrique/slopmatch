@@ -545,8 +545,78 @@ function previewText(profile) {
 `;
 }
 
+// ../worker/src/clean.ts
+var SUBSTR = ["fuck", "motherf", "asshole", "arsehole", "cocksucker", "dickhead", "faggot", "nigger", "nigga", "pukimak", "cheebye", "chibai", "cibai"];
+var WORDS = [
+  /^(bull|horse|dip|chicken|ape)?shit(s|ty|ter|ters|head|heads|hole|holes|show|post|posting|ting|e)?$/,
+  /^bitch(es|y|ing|ed)?$/,
+  /^(son)?ofabitch$/,
+  /^bastards?$/,
+  /^cunts?$/,
+  /^twats?$/,
+  /^wank(er|ers|ing)?$/,
+  /^(dumb|jack|smart|bad|kick|lazy|fat)?ass(es|hat|hats|wipe)?$/,
+  /^arse(s|wipe)?$/,
+  /^bollocks?$/,
+  /^slut(s|ty)?$/,
+  /^whores?$/,
+  /^retard(s|ed)?$/,
+  /^piss(ed|ing|er)?$/,
+  /^crap(py|s)?$/,
+  /^(god)?damn(ed|it)?$/,
+  /^dammit$/,
+  /^douche(bag|bags)?$/,
+  /^jizz$/,
+  /^fuk(ing|in|ed|er|ers|s)?$/,
+  /^knn$/,
+  /^ccb$/,
+  /^puki$/,
+  /^nabei$/,
+  /^pundek$/,
+  /^sohai$/,
+  /^kanina(bu)?$/,
+  /^lancau$/
+];
+var LEET = { "0": "o", "1": "i", "!": "i", "3": "e", "4": "a", "@": "a", "5": "s", $: "s", "7": "t", "+": "t", "|": "i" };
+var squeeze = (s) => s.replace(/(.)\1+/g, "$1");
+var SUBSTR_SQ = SUBSTR.map(squeeze);
+function badToken(t) {
+  if (!t)
+    return false;
+  if (SUBSTR.some((r) => t.includes(r)) || WORDS.some((re) => re.test(t)))
+    return true;
+  const sq = squeeze(t);
+  if (sq !== t) {
+    if (SUBSTR_SQ.some((r) => sq.includes(r)))
+      return true;
+    if (WORDS.some((re) => re.test(sq)))
+      return true;
+  }
+  return false;
+}
+function hasBadWords(text) {
+  let s = String(text ?? "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "");
+  s = s.replace(/\b([a-z0-9@$!*])(?:[\s._\-]+([a-z0-9@$!*])\b)+/g, (m) => m.replace(/[\s._\-]+/g, ""));
+  const raw = s.split(/[^a-z0-9@$!*|+]+/).filter(Boolean);
+  for (const r of raw) {
+    const leet = (x) => x.split("").map((c) => LEET[c] ?? c).join("");
+    const base = leet(r.replace(/^@+/, ""));
+    const variants = base.includes("*") ? ["u", "i", "a", "o"].map((v) => base.replace(/\*+/g, v)) : [base];
+    for (const v of variants)
+      for (const t of v.split(/[^a-z]+/))
+        if (badToken(t))
+          return true;
+    if (r.startsWith("@")) {
+      for (const t of leet(r).split(/[^a-z]+/))
+        if (SUBSTR.some((x) => t.includes(x)))
+          return true;
+    }
+  }
+  return false;
+}
+
 // src/cli.ts
-var VERSION = "0.4.0";
+var VERSION = "0.4.1";
 var DEFAULT_URL = "https://slopmatch.lol";
 var DEFAULT_ROOM = "world";
 var DIMS = [
@@ -805,6 +875,11 @@ async function cmdPublish() {
   if (!card)
     die(`Could not read card JSON at ${cardPath}`);
   const payload = buildPayload(card, fp, t.room);
+  const c = payload.card, dirty = ["headline", "style", "looking_for"].filter((k) => hasBadWords(c[k]));
+  if (hasBadWords(c.topics.join(" ")))
+    dirty.push("topics");
+  if (dirty.length)
+    die(`Please keep the card clean: ${dirty.join(", ")} ${dirty.length > 1 ? "have" : "has"} a word slopmatch doesn't allow. Edit ${cardPath} and try again.`);
   if (!v.yes) {
     out(`DRY RUN. This is exactly what would be sent to ${t.url}
 `);
@@ -842,6 +917,8 @@ async function cmdReveal() {
     die('Usage: slopmatch reveal <handle> --contact "telegram @me"');
   if (!v.contact)
     die("--contact is required");
+  if (hasBadWords(v.contact))
+    die("Please keep the contact clean: it has a word slopmatch doesn't allow.");
   out(await call("POST", url, "/api/reveals", { handle, contact: clip(v.contact, 120) }, ident.token));
 }
 async function cmdStatus() {
