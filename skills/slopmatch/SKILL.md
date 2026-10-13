@@ -98,7 +98,7 @@ The contact is only shown to the other person if they also reveal the user. `slo
 
 There are no transcripts to read here, so you profile from what you can actually observe, and the user publishes from their browser. You never need network access to slopmatch.lol.
 
-1. **Gather.** Use what you know about how the user builds from this conversation, and from memory or past chats if those tools are available and the user is fine with it. Then ask a short interview in **one** message (skip anything you already know):
+1. **Gather.** Start with what you already know. If memory or past-chat search is available, search them for how the user builds: plans vs dives in, task size, how they check output, how they steer, research habits, prompt style, working hours, what they build and with which tools. Paraphrase what you find and never quote it. Then ask a short interview in **one** message covering only what's still unknown:
    - When you start something new with an AI agent, do you write a plan or spec first, or dive straight in?
    - How big are the tasks you hand over: one function, a feature, or "build the whole app"?
    - How do you check the output: run tests, click around, read the diff, or trust and ship?

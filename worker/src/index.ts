@@ -296,8 +296,12 @@ import SKILL_MD from "../../skills/slopmatch/SKILL.md";
 import AGENTS_MD from "./agents.md";
 import LANDING_HTML from "./landing.html";
 import JOIN_HTML from "./join.html";
+import PROMPT_MD from "./prompt.md";
 
-const LANDING = LANDING_HTML.replace("__HANDLE_WORDS__", JSON.stringify({ adj: ADJ, animal: ANIMAL }));
+// JSON for inline <script>; escape "<" so nothing in it can close the script tag.
+const inlineJson = (v: unknown) => JSON.stringify(v).replace(/</g, "\\u003c");
+const LANDING = LANDING_HTML.replace("__HANDLE_WORDS__", inlineJson({ adj: ADJ, animal: ANIMAL })).replace("__PROMPT__", inlineJson(PROMPT_MD));
+const JOIN = JOIN_HTML.replace("__PROMPT__", inlineJson(PROMPT_MD));
 
 /** Browsers get the landing page; curl, agents and anything asking for markdown get install instructions. */
 function wantsHtml(req: Request) {
@@ -448,7 +452,8 @@ export default {
         });
       }
       if (p === "/llms.txt" || p === "/index.md") return markdown(url);
-      if (p === "/join") return new Response(JOIN_HTML, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60" } });
+      if (p === "/prompt") return new Response(PROMPT_MD, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=60" } });
+      if (p === "/join") return new Response(JOIN, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60" } });
       if (p === "/skill/slopmatch.zip") {
         return new Response(SKILL_ZIP, {
           headers: { "content-type": "application/zip", "content-disposition": 'attachment; filename="slopmatch.zip"', "cache-control": "public, max-age=60" },

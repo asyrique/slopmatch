@@ -343,6 +343,7 @@
 const ORIGIN = location.origin;
 const ROOM_RE = /^[a-z0-9][a-z0-9-]{2,31}$/;
 const WORDS = __HANDLE_WORDS__;
+const PROMPT = __PROMPT__;
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------------- installer widgets (kept in sync) ---------------- */
@@ -359,11 +360,11 @@ function renderInstallers() {
     w.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.os === state.os)));
     const ai = state.os === "ai";
     w.querySelector(".cmd .p").textContent = ai ? "1" : "$";
-    w.querySelector("[data-copy]").textContent = ai ? "download" : "copy";
+    w.querySelector("[data-copy]").textContent = ai ? "copy prompt" : "copy";
     w.querySelector(".then").innerHTML = ai
-      ? 'then upload it in claude.ai → <b>Settings → Capabilities → Skills</b> and say <kbd>/slopmatch</kbd> in a new chat · <a href="/join">already have a card? ↗</a>'
+      ? 'paste it into claude.ai, then paste the JSON it gives back at <a href="/join">slopmatch.lol/join ↗</a> · or <a href="/skill/slopmatch.zip">install the skill</a>'
       : `then in Claude Code or Codex: <kbd>/slopmatch</kbd> · <a href="/r/${state.room}">see who's in ↗</a>`;
-    w.querySelector("[data-cmd]").textContent = ai ? "Download the slopmatch skill (slopmatch.zip)" : cmdFor();
+    w.querySelector("[data-cmd]").textContent = ai ? "Copy the slopmatch prompt. It reads Claude's memory of you" : cmdFor();
   });
   document.getElementById("navroom").href = "/r/" + state.room;
 }
@@ -371,12 +372,11 @@ document.querySelectorAll("[data-installer]").forEach((w) => {
   w.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { state.os = t.dataset.os; renderInstallers(); }));
   const btn = w.querySelector("[data-copy]");
   btn.addEventListener("click", async () => {
-    if (state.os === "ai") { location.href = "/skill/slopmatch.zip"; return; }
-    try { await navigator.clipboard.writeText(cmdFor()); } catch {
+    try { await navigator.clipboard.writeText(state.os === "ai" ? PROMPT : cmdFor()); } catch {
       const r = document.createRange(); r.selectNodeContents(w.querySelector("[data-cmd]")); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
     }
     btn.textContent = "copied ✓"; btn.classList.add("ok");
-    setTimeout(() => { btn.textContent = "copy"; btn.classList.remove("ok"); }, 1600);
+    setTimeout(() => { btn.textContent = state.os === "ai" ? "copy prompt" : "copy"; btn.classList.remove("ok"); }, 1600);
   });
 });
 renderInstallers();
